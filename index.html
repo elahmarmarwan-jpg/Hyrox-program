@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HYROX 18-Week Program</title>
+<meta name="description" content="Free 18-week HYROX training program: strength, running, stations and race simulations. Log your scores in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one column training log — summary + today first, phase strip, week tabs, day cards, reference below */
+:root{
+  --bg:#f4f5f7; --surface:#ffffff; --ink:#151a22; --muted:#5d6675; --line:#dfe3e9;
+  --accent:#f26a1b; --accent-soft:#fde9dc;
+  --str:#3a5bd9; --run:#0f8a6a; --sta:#a3479b; --opt:#6b7280; --main:#f26a1b; --rest:#9aa3af; --test:#c2410c;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif; --body:"Barlow",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f131a; --surface:#181e28; --ink:#eef1f5; --muted:#9aa4b3; --line:#2a3240;
+    --accent:#ff8a3d; --accent-soft:#3a2416;
+    --str:#7d97ff; --run:#3cc79f; --sta:#d68bd0; --opt:#9aa3af; --main:#ff8a3d; --rest:#6b7380; --test:#ff9a5c;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f131a; --surface:#181e28; --ink:#eef1f5; --muted:#9aa4b3; --line:#2a3240;
+  --accent:#ff8a3d; --accent-soft:#3a2416;
+  --str:#7d97ff; --run:#3cc79f; --sta:#d68bd0; --opt:#9aa3af; --main:#ff8a3d; --rest:#6b7380; --test:#ff9a5c;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:.01em}
+h1{font-size:40px;font-weight:800;line-height:1;text-transform:uppercase}
+h2{font-size:24px;font-weight:700;text-transform:uppercase}
+.sub{color:var(--muted);margin-top:6px;font-size:15px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat b{display:block;font-family:var(--display);font-size:32px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted);font-size:13px}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+.today{background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.today .eyebrow{font-family:var(--display);font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;font-size:14px}
+.today h3{font-size:28px;font-weight:700}
+.today p{margin:0}
+.phases{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.ph{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--muted)}
+.ph b{display:block;color:var(--ink);font-family:var(--display);font-size:16px;font-weight:700;text-transform:uppercase;line-height:1.1}
+.ph.on{border-color:var(--accent);background:var(--accent-soft)}
+.weeks{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+.wk{flex:0 0 auto;min-width:46px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:var(--display);font-weight:700;font-size:16px;cursor:pointer;text-align:center;line-height:1.1}
+.wk small{display:block;font-family:var(--body);font-weight:500;font-size:11px;color:var(--muted)}
+.wk.cur{border-color:var(--accent)}
+.wk.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.wk.sel small{color:#fff}
+.wk:focus-visible,.chk:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.weekhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.weekhead .meta{color:var(--muted);font-size:14px}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);margin-left:6px;vertical-align:middle;font-family:var(--body);text-transform:none;letter-spacing:0}
+.days{display:flex;flex-direction:column;gap:10px}
+.day{display:grid;grid-template-columns:62px 1fr auto;gap:12px;align-items:start;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;padding:12px 14px}
+.day.main{background:var(--accent-soft)}
+.day.is-today{box-shadow:0 0 0 2px var(--accent)}
+.day.done .body{opacity:.55}
+.d{font-family:var(--display);line-height:1}
+.d b{display:block;font-size:22px;font-weight:700;text-transform:uppercase}
+.d span{font-size:13px;color:var(--muted);font-family:var(--body)}
+.body{display:flex;flex-direction:column;gap:4px;min-width:0}
+.top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;color:#fff;background:var(--c)}
+.target{font-size:13px;color:var(--muted);font-weight:600}
+.sess{font-weight:600}
+.wo{margin:0;font-size:15px;overflow-wrap:anywhere}
+.chk{width:26px;height:26px;accent-color:var(--accent);cursor:pointer;margin:2px 0 0}
+section.ref{display:flex;flex-direction:column;gap:10px}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--display);font-size:15px;text-transform:uppercase;color:var(--muted);font-weight:700}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+ul.rules{margin:0;padding:12px 14px 12px 32px;background:var(--surface);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.note{color:var(--muted);font-size:13px}
+
+.status{color:var(--muted);font-size:13px;margin-top:-12px}
+.btn{font:inherit;font-weight:600;font-size:15px;padding:10px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;align-self:flex-start;text-decoration:none;display:inline-block}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.on{background:var(--run);border-color:var(--run)}
+.btn:focus-visible,.open:focus-visible,.in:focus-visible,.swapbtn:focus-visible,.altc:focus-visible,.rc:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.body{all:unset;display:flex;flex-direction:column;gap:4px;min-width:0;cursor:pointer}
+.more{font-size:13px;font-weight:600;color:var(--accent);margin-top:2px}
+.chip{font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.sheet{position:fixed;inset:0;background:var(--bg);overflow-y:auto;z-index:20}
+.sheet-in{max-width:760px;margin:0 auto;padding:14px 16px 60px;display:flex;flex-direction:column;gap:14px}
+.back{all:unset;cursor:pointer;color:var(--accent);font-weight:600;font-size:15px;padding:6px 0}
+.dhead{display:flex;flex-direction:column;gap:8px;border-left:5px solid var(--c);padding-left:12px}
+.dhead .eyebrow{font-size:13px;color:var(--muted)}
+.dhead h2{font-size:30px}
+.sh{font-family:var(--display);font-size:19px;text-transform:uppercase;margin-top:6px}
+.parts{display:flex;flex-direction:column;gap:10px}
+.part{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.ptop{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
+.pname{font-weight:600;overflow-wrap:anywhere}
+.planned{font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
+.swapbtn{flex:0 0 auto;font:inherit;font-size:13px;font-weight:600;padding:6px 10px;border-radius:999px;border:1px solid var(--str);background:transparent;color:var(--str);cursor:pointer}
+.alts{display:flex;flex-wrap:wrap;gap:6px}
+.alts .note{flex-basis:100%}
+.altc{font:inherit;font-size:13px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.altc.on{background:var(--str);border-color:var(--str);color:#fff}
+.altc.ghost{color:var(--muted)}
+.sets{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.set{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.set.wide{font-size:13px}
+.in{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0;font-variant-numeric:tabular-nums}
+textarea.in{resize:vertical}
+.in.wide{width:100%}
+.splits td{padding:6px 8px}
+.splits .in{padding:7px 8px}
+.rpe-l{font-size:13px;color:var(--muted)}
+.rpe{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.rc{font:inherit;font-weight:600;padding:8px 0;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.rc.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.dnav{display:flex;justify-content:space-between;gap:10px;margin-top:8px}
+.tbl a{color:var(--ink)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;font-size:14px;color:var(--muted)}
+.in.date{width:auto}
+footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:14px}
+@media (max-width:560px){
+  h1{font-size:32px}
+  .phases{grid-template-columns:repeat(2,1fr)}
+  .day{grid-template-columns:50px 1fr auto;gap:10px;padding:11px 12px}
+  .stat b{font-size:26px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>HYROX 18-Week Program</h1>
+    <div class="sub">Strength, running, stations and race simulations · intermediate · Open standards · 5–6 sessions a week, one main session</div>
+    <div class="controls">
+      <label for="startDate">Week 1 starts on</label>
+      <input type="date" id="startDate" class="in date">
+      <button class="btn ghost" id="exportBtn" type="button">Export backup</button>
+      <label class="btn ghost" for="importFile">Import backup</label>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><b id="sDone">0</b><span>sessions done</span><div class="bar"><i id="sBar"></i></div></div>
+    <div class="stat"><b id="sComp">—</b><span>of sessions due so far</span></div>
+    <div class="stat"><b id="sLeft">18</b><span>weeks to go</span></div>
+  </div>
+
+  <div class="status" id="syncStatus" role="status"></div>
+
+  <div class="today" id="today"></div>
+
+  <div class="phases" id="phases"></div>
+
+  <nav class="weeks" id="weeks" aria-label="Choose a week"></nav>
+
+  <section class="weekhead"><h2 id="wTitle">Week</h2><div class="meta" id="wMeta"></div></section>
+  <div class="days" id="days"></div>
+  <section class="ref">
+    <h2>Your results</h2>
+    <div class="tbl"><table id="benchTests"></table></div>
+    <div class="tbl"><table id="benchSims"></table></div>
+    <div class="note">Fills in from what you log in each test and simulation session. Tap a row to open it.</div>
+  </section>
+
+  <section class="ref">
+    <h2>No-sled swaps</h2>
+    <div class="tbl"><table>
+      <tr><th>Race station</th><th>Do this instead</th><th>How</th></tr>
+      <tr><td>Sled push</td><td>Treadmill push</td><td>Use a curved, non-motorised treadmill if there is one. Otherwise a standard treadmill with the motor off, incline 3–5%, hands on the frame, short driving steps, body at 45°. Read distance off the display. If the gym won't allow it: bumper-plate push on a towel, or heavy goblet walking lunges for the same time.</td></tr>
+      <tr><td>Sled pull</td><td>Rope pull</td><td>Tie a battle rope to a heavy kettlebell or stacked plates, sit back in an athletic stance and pull hand-over-hand until it reaches you; walk it out and repeat to the distance. Fallback: heavy seated cable row ×15 + 20m backwards walk.</td></tr>
+      <tr><td>"Heavy"</td><td>Effort, not kilos</td><td>Heavy means slow, grinding steps you can only hold for 20–40s. Keep rest the same as written.</td></tr>
+    </table></div>
+    <div class="note">Before race day, try to book 2–3 sessions somewhere with real sleds at 152 kg / 103 kg, ideally for the Wk 10, 14 and 16 simulations.</div>
+  </section>
+
+  <section class="ref">
+    <h2>Weekly structure</h2>
+    <div class="tbl"><table>
+      <tr><th>Day</th><th>Session</th><th>Purpose</th></tr>
+      <tr><td>Sun</td><td>Strength A · Lower</td><td>Squat, hinge, lunge, treadmill push</td></tr>
+      <tr><td>Mon</td><td>Run</td><td>Threshold and race-pace work for your 1 km pace</td></tr>
+      <tr><td>Tue</td><td>Strength B · Upper + Pull</td><td>Press, pull, grip, farmers carry, plus a Zone 2 flush</td></tr>
+      <tr><td>Wed</td><td>Stations</td><td>Capacity first, then race pace under fatigue</td></tr>
+      <tr><td>Thu</td><td>Optional · Zone 2 / Power</td><td>6th day. Pick Power for a 3rd strength day. First to drop in a busy week</td></tr>
+      <tr><td>Fri</td><td>MAIN · HYROX</td><td>Compromised running, half and full simulations</td></tr>
+      <tr><td>Sat</td><td>Rest</td><td>Rest, walk, mobility</td></tr>
+    </table></div>
+    <div class="note">Days shown for a Sunday start. Starting on another day keeps the same order: the main session is always day 6.</div>
+  </section>
+
+  <section class="ref">
+    <h2>Effort guide</h2>
+    <div class="tbl"><table>
+      <tr><th>Zone</th><th>RPE</th><th>Feels like</th></tr>
+      <tr><td>Zone 2 / easy</td><td class="num">3–4</td><td>Full conversation possible</td></tr>
+      <tr><td>Threshold</td><td class="num">7–8</td><td>Short sentences only; could hold it 40–60 min</td></tr>
+      <tr><td>Race pace</td><td class="num">8</td><td>Your target HYROX 1 km pace, controlled discomfort</td></tr>
+      <tr><td>Max / test</td><td class="num">9–10</td><td>All-out, test days only</td></tr>
+    </table></div>
+  </section>
+
+  <section class="ref">
+    <h2>Race standards · Open Men</h2>
+    <div class="tbl"><table>
+      <tr><th>#</th><th>Station (after each 1 km run)</th><th>Distance</th><th>Load</th></tr>
+      <tr><td class="num">1</td><td>SkiErg</td><td class="num">1,000 m</td><td>—</td></tr>
+      <tr><td class="num">2</td><td>Sled push</td><td class="num">50 m</td><td>152 kg incl. sled</td></tr>
+      <tr><td class="num">3</td><td>Sled pull</td><td class="num">50 m</td><td>103 kg incl. sled</td></tr>
+      <tr><td class="num">4</td><td>Burpee broad jumps</td><td class="num">80 m</td><td>Bodyweight</td></tr>
+      <tr><td class="num">5</td><td>Row</td><td class="num">1,000 m</td><td>—</td></tr>
+      <tr><td class="num">6</td><td>Farmers carry</td><td class="num">200 m</td><td>2 × 24 kg</td></tr>
+      <tr><td class="num">7</td><td>Sandbag lunges</td><td class="num">100 m</td><td>20 kg</td></tr>
+      <tr><td class="num">8</td><td>Wall balls</td><td class="num">100 reps</td><td>6 kg</td></tr>
+    </table></div>
+  </section>
+
+  <section class="ref">
+    <h2>Rules of the block</h2>
+    <ul class="rules">
+      <li>Missed a session? Drop Thursday first, then Wednesday. Protect Friday.</li>
+      <li>Deload weeks 4, 8 and 12 are part of the plan. Don't add work back in.</li>
+      <li>Pick loads that hit the RPE shown; add 2.5–5 kg when every set feels easier than target.</li>
+      <li>Tests: baseline on kick-off day, retest Wk 4, half sims Wk 4 and Wk 8, full sims Wk 10, 14, 16 and 18.</li>
+            <li>If you fast in Ramadan: train after iftar, cut volume about 20%, keep Friday as the priority.</li>
+    </ul>
+  </section>
+  <footer>Train within your limits and check with a doctor before starting a new program. HYROX is a trademark of its owner; this is an independent, unofficial plan.</footer>
+</div>
+
+<div class="sheet" id="detail" hidden>
+  <div class="sheet-in">
+    <button class="back" id="back">‹ Back to week</button>
+    <div id="dBody"></div>
+  </div>
+</div>
+
+<script>
+const THU = m => ["Optional · Zone 2 / Power","Zone 2 / RPE 7",`Option A: Zone 2 run ${m}' · Option B (Power): KB swing 5×15, box jump 5×5, med-ball slam 4×10`];
+const REST = ["Rest","—","Full rest, or 30' walk + stretching"];
+const REST_FULL = ["Rest","—","Full rest"];
+const MOB = ["Optional · Zone 2 / Power","Easy","Mobility / yoga 30'"];
+
+const PHASES = [
+  {n:"Build", w:"Wk 1–4", from:1, to:4},
+  {n:"Strength-Endurance", w:"Wk 5–8", from:5, to:8},
+  {n:"Race-Specific I", w:"Wk 9–12", from:9, to:12},
+  {n:"Race-Specific II", w:"Wk 13–16", from:13, to:16},
+  {n:"Peak & Taper", w:"Wk 17–18", from:17, to:18}
+];
+
+const WEEKS = {
+ 1:{deload:false,days:[
+  ["Strength A · Lower","RPE 8","Back squat 5×5 · Trap-bar deadlift 4×5 · Bulgarian split squat 3×8/leg · Heavy treadmill push 5×25m · Pallof press 3×10/side"],
+  ["Run · Threshold","RPE 7–8","15' warm-up → 4×1 km @ threshold, 90s jog → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 8","Strict press 5×5 · Weighted pull-ups 4×5 · Rope/cable row 4×10 · Farmers carry 4×50m @ 2×32kg · Zone 2 25'"],
+  ["Stations","RPE 7–8","SkiErg 4×500m @ race pace, 1:1 rest · Wall balls 4×25, 60s rest · BBJ 3×20m"],
+  THU(45),
+  ["MAIN · HYROX","RPE 7","Compromised running: 8 × [1 km run @ RPE 7 + station at 50% race volume] in race order: Ski 500m → Treadmill push 25m → Rope pull 25m → BBJ 40m → Row 500m → Farmers 100m → Lunges 50m → 50 WB"],
+  REST]},
+ 2:{deload:false,days:[
+  ["Strength A · Lower","RPE 8","Back squat 5×5 (+2.5kg) · Trap-bar DL 4×5 · Bulgarian split squat 3×10/leg · Treadmill push 6×25m heavy · Core"],
+  ["Run · Threshold","RPE 7–8","15' warm-up → 5×1 km @ threshold, 90s jog → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 8","Strict press 5×5 · Weighted pull-ups 4×5 · Rope row 4×10 · Farmers 4×60m @ 2×32kg · Zone 2 30'"],
+  ["Stations","RPE 8","Treadmill push 8×12.5m heavy, 60s rest · Rope pull 8×12.5m heavy, 60s rest · BBJ 3×20m"],
+  THU(45),
+  ["MAIN · HYROX","RPE 7–8","8 × [1 km run @ RPE 7 + station at 60% race volume] in race order"],
+  REST]},
+ 3:{deload:false,days:[
+  ["Strength A · Lower","RPE 8","Back squat 5×4 · Trap-bar DL 5×4 · Bulgarian split squat 3×8/leg (loaded) · Treadmill push 6×25m · Core"],
+  ["Run · Threshold","RPE 7–8","15' warm-up → 6×1 km @ threshold, 75s jog → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 8","Strict press 5×4 · Weighted pull-ups 5×4 · Rope row 4×10 · Farmers 4×75m @ 2×32kg · Zone 2 30'"],
+  ["Stations","RPE 7–8","Row 4×500m @ race pace, 1:1 rest · Farmers carry 4×100m @ 2×24kg · Sandbag lunges 4×25m @ 20kg"],
+  THU(50),
+  ["MAIN · HYROX","RPE 7–8","8 × [1 km run @ RPE 7–8 + station at 70% race volume] in race order. Log each 1 km split"],
+  REST]},
+ 4:{deload:true,days:[
+  ["Strength A · Lower","RPE 6","DELOAD: Back squat 3×5 · Trap-bar DL 2×5 · Split squat 2×8/leg · Treadmill push 3×25m · Mobility 15'"],
+  ["Run · Test","RPE 9","TEST: 15' warm-up → 1 km time trial → 15' easy. Compare to baseline"],
+  ["Strength B · Upper + Pull","RPE 6","DELOAD: Strict press 3×5 · Pull-ups 3×5 · Rope row 3×10 · Farmers 3×50m · Zone 2 20'"],
+  ["Stations · Test","Max","TEST: 1,000m SkiErg → 5' → 1,000m Row → 5' → 100 wall balls for time. Compare to baseline"],
+  MOB,
+  ["MAIN · HYROX","RPE 8","TEST: Half HYROX (front half): 4 × [1 km run + full station]: Ski 1,000m / Treadmill push 50m / Rope pull 50m / BBJ 80m. Log total + splits"],
+  REST_FULL]},
+ 5:{deload:false,days:[
+  ["Strength A · Lower","RPE 8","Front squat 4×5 · Deadlift 4×3 · Superset ×3: sandbag lunge 20kg 20m + box jump 5 · Treadmill push 6×12.5m, heavier than feels comfortable, 60s rest"],
+  ["Run · Threshold","RPE 7–8","15' warm-up → 3×2 km @ threshold, 2' jog → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 8","Push press 4×4 · Pendlay row 4×6 · Rope pull 6×12.5m heavy · Farmers 3×100m @ 2×24kg · Zone 2 30'"],
+  ["Stations","RPE 8","4 rounds: SkiErg 500m + 500m run + 25 wall balls, steady race pace, 2' rest between rounds"],
+  THU(50),
+  ["MAIN · HYROX","Race pace","8 × [1 km run @ target race pace + station at 75% race volume] in race order. Keep transitions under 30s"],
+  REST]},
+ 6:{deload:false,days:[
+  ["Strength A · Lower","RPE 8","Front squat 4×5 · Deadlift 4×3 · Superset ×4: sandbag lunge 20m + box jump 5 · Treadmill push 8×12.5m, heavier than feels comfortable"],
+  ["Run · Race pace","Race pace","15' warm-up → 8×1 km @ target race pace, 60s rest → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 8","Push press 4×4 · Pendlay row 4×6 · Rope pull 8×12.5m · Farmers 3×100m · Zone 2 30'"],
+  ["Stations","RPE 8","4 rounds, heavy: Treadmill push 25m + 400m run + Rope pull 25m + 400m run"],
+  THU(50),
+  ["MAIN · HYROX","RPE 7","Engine builder: 5 km run @ RPE 6 → straight into 3 rounds: Row 500m + BBJ 20m + 30 wall balls → 2 km run"],
+  REST]},
+ 7:{deload:false,days:[
+  ["Strength A · Lower","RPE 8–9","Front squat 3×4 · Deadlift 3×3 · Superset ×4: sandbag lunge 25m + box jump 5 · Treadmill push 8×12.5m"],
+  ["Run · Tempo","RPE 7","15' warm-up → 25' continuous tempo @ RPE 7 → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 8","Push press 4×3 · Pendlay row 4×6 · Rope pull 8×12.5m · Farmers 2×200m @ 2×24kg · Zone 2 35'"],
+  ["Stations","RPE 8","3 rounds @ race weights: 50m sandbag lunges + 200m farmers carry + 40m BBJ + 400m run"],
+  THU(50),
+  ["MAIN · HYROX","Race pace","8 × [1 km run @ race pace + station at 85% race volume] in race order. Log splits"],
+  REST]},
+ 8:{deload:true,days:[
+  ["Strength A · Lower","RPE 6","DELOAD: Front squat 3×4 · Deadlift 2×3 · Lunges 2×10/leg · Treadmill push 3×12.5m · Mobility 15'"],
+  ["Run · Easy","Zone 2","30' easy run + 6×20s strides"],
+  ["Strength B · Upper + Pull","RPE 6","DELOAD: Push press 3×4 · Row 3×8 · Pull-ups 3×6 · Farmers 2×100m · Zone 2 20'"],
+  ["Stations","RPE 6","Station tour at 60%: all 8 stations, focus on technique and breathing"],
+  MOB,
+  ["MAIN · HYROX","RPE 8","TEST: Half HYROX (back half) at 80% effort: 4 × [1 km run + full station]: Row 1,000m / Farmers 200m / Lunges 100m / 100 WB. Log splits"],
+  REST_FULL]},
+ 9:{deload:false,days:[
+  ["Strength A · Lower","RPE 8","Back squat 4×4 · RDL 3×6 · Finisher 3 rounds: treadmill push 25m heavy + 15 wall balls + 300m run"],
+  ["Run · Race pace","Race pace","15' warm-up → 8×1 km @ race pace, 60s rest → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 8","Push press 4×4 · Weighted pull-ups 4×5 · Complex ×4: Rope pull 25m + farmers 100m @ 2×24kg · Zone 2 30'"],
+  ["Stations","Race pace","Front-half stations at race pace, 500m run between: Ski 1,000m → Treadmill push 50m → Rope pull 50m → BBJ 80m"],
+  THU(50),
+  ["MAIN · HYROX","Race pace","8 × [1 km @ race pace + station at 90% race volume] in race order. Transitions under 30s, log splits"],
+  REST]},
+ 10:{deload:false,days:[
+  ["Strength A · Lower","RPE 8","Back squat 4×3 · RDL 3×6 · Finisher 4 rounds: Treadmill push 25m + 15 wall balls + 300m run"],
+  ["Run · Threshold+","RPE 8","15' warm-up → 3×2 km slightly faster than race pace, 2' jog → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 8","Push press 4×3 · Weighted pull-ups 4×4 · Complex ×4: Rope pull 25m + farmers 100m · Zone 2 35'"],
+  ["Stations","Race pace","Back-half stations at race pace, 500m run between: Row 1,000m → Farmers 200m → Lunges 100m → 100 wall balls"],
+  ["Optional · Zone 2 / Power","Zone 2","Zone 2 run 40' + 6 strides (keep it easy before Friday)"],
+  ["MAIN · HYROX","RPE 7–8 (80%)","FULL HYROX SIMULATION @ 80% effort: 8×1 km + all 8 stations (race weights, push/pull swaps). First full run-through: learn your pacing, log every split"],
+  REST_FULL]},
+ 11:{deload:false,days:[
+  ["Strength A · Lower","RPE 8","Front squat 3×4 · Deadlift 3×3 · Finisher 4 rounds: sandbag lunge 25m + Treadmill push 25m + 300m run"],
+  ["Run · Race pace","Race pace","15' warm-up → 10×1 km @ race pace, 60s rest → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 8","Bench press 4×5 · Weighted pull-ups 4×4 · Complex ×4: Rope pull 25m + farmers 100m · Zone 2 35'"],
+  ["Stations","Race pace","Weakness day: your 2 slowest stations from the Wk 10 sim, 4 rounds each at race weight, 400m run between"],
+  THU(50),
+  ["MAIN · HYROX","Race pace","Race-pace blocks: 4 × [2 km run @ race pace + 2 stations at full race volume], in race order, 3' between blocks"],
+  REST]},
+ 12:{deload:true,days:[
+  ["Strength A · Lower","RPE 6","DELOAD: Back squat 3×4 · RDL 2×5 · Lunges 2×10/leg · Treadmill push 3×12.5m · Mobility 15'"],
+  ["Run · Easy","Zone 2","30' easy run + 6×20s strides"],
+  ["Strength B · Upper + Pull","RPE 6","DELOAD: Push press 3×4 · Row 3×8 · Pull-ups 3×6 · Farmers 2×100m · Zone 2 20'"],
+  ["Stations","RPE 6","Station tour at 60%: all 8 stations, technique and breathing"],
+  MOB,
+  ["MAIN · HYROX","RPE 6","DELOAD: 4 × [1 km run @ RPE 6 + one station at 50%], smooth technique, no racing"],
+  REST_FULL]},
+ 13:{deload:false,days:[
+  ["Strength A · Lower","RPE 8","Back squat 3×3 · RDL 3×6 · Finisher 3 rounds: treadmill push 25m heavy + 20 wall balls + 200m run"],
+  ["Run · Race pace","Race pace","15' warm-up → 10×1 km @ race pace, 45s rest → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 8","Bench press 3×5 · Pull-ups 3×8 · Complex ×4: Rope pull 25m + farmers 100m · Zone 2 30'"],
+  ["Stations","Race pace","Front-half stations at race pace, 3' rest between: Ski 1,000m → Treadmill push 50m → Rope pull 50m → BBJ 80m. Note each station time"],
+  ["Optional · Zone 2 / Power","Zone 2","Zone 2 run 30' + 6 strides"],
+  ["MAIN · HYROX","Race pace","Race-pace blocks: 4 × [2 km run @ race pace + 2 stations at full race volume], in race order, 3' between blocks"],
+  REST]},
+ 14:{deload:false,days:[
+  ["Strength A · Lower","RPE 8","Back squat 3×3 · RDL 3×6 · Finisher 3 rounds: Treadmill push 25m + 20 wall balls + 200m run"],
+  ["Run · Speed","Faster than race","15' warm-up → 6×800m faster than race pace, 90s jog → 2 km tempo → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 8","Bench press 3×5 · Pull-ups 3×8 · Complex ×4: Rope pull 25m + farmers 100m · Zone 2 35'"],
+  ["Stations","Race pace","Back-half stations at race pace, 3' rest between: Row 1,000m → Farmers 200m → Lunges 100m → 100 wall balls"],
+  ["Optional · Zone 2 / Power","Zone 2","Zone 2 run 30' + 6 strides"],
+  ["MAIN · HYROX","RPE 8 (85%)","FULL HYROX SIMULATION @ 85% effort: 8×1 km + all 8 stations (race weights, push/pull swaps). Record every split + total"],
+  REST_FULL]},
+ 15:{deload:false,days:[
+  ["Strength A · Lower","RPE 8","Back squat 3×2 · RDL 2×6 · Finisher 4 rounds: Treadmill push 25m + 20 wall balls + 200m run"],
+  ["Run · Race pace","Race pace","15' warm-up → 8×1 km @ race pace, 30s rest → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 8","Bench press 3×5 · Pull-ups 3×6 · Complex ×4: Rope pull 25m + farmers 100m · Zone 2 30'"],
+  ["Stations","Race pace","Weakness day: your 2 slowest stations from the Wk 14 sim, 4 rounds each at race weight, 400m run between"],
+  ["Optional · Zone 2 / Power","Zone 2","Zone 2 run 30' + 6 strides"],
+  ["MAIN · HYROX","Race pace","Roxzone drill: 8 × [1 km @ race pace + station at 75%]. Practise transitions under 30s, race fuelling and pacing plan"],
+  REST]},
+ 16:{deload:false,days:[
+  ["Strength A · Lower","RPE 7","Back squat 3×3 · RDL 2×5 · Treadmill push 4×12.5m, fast and crisp, no grinding"],
+  ["Run · Race pace","Race pace","15' warm-up → 5×1 km @ race pace, 60s rest → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 7","Bench press 3×4 · Pull-ups 3×5 · Farmers 2×100m · Zone 2 25'"],
+  ["Stations","RPE 5","Light technique: each station at 25% volume, smooth · 20' easy run"],
+  ["Optional · Zone 2 / Power","Easy","Rest, or 20' easy jog + mobility"],
+  ["MAIN · HYROX","RPE 9","TEST: FULL HYROX SIMULATION @ race effort, in race kit with race fuelling. Record total + all splits"],
+  REST_FULL]},
+ 17:{deload:false,days:[
+  ["Strength A · Lower","RPE 6","Recovery strength: Back squat 3×3 · RDL 2×5 · Mobility 15'"],
+  ["Run · Race pace","Race pace","15' warm-up → 5×1 km @ race pace, 60s rest → 10' cool-down"],
+  ["Strength B · Upper + Pull","RPE 7","Strict press 3×5 · Pull-ups 3×5 · Farmers 2×100m · Zone 2 25'"],
+  ["Stations","RPE 7–8","Station sharpening: each station at 50% volume, race pace, full rest between"],
+  ["Optional · Zone 2 / Power","Zone 2","Zone 2 run 30' + 6 strides"],
+  ["MAIN · HYROX","Race pace","Half sim (front half) @ race pace: 4 × [1 km + Ski 1,000m / Treadmill push 50m / Rope pull 50m / BBJ 80m]"],
+  REST_FULL]},
+ 18:{deload:false,days:[
+  ["Strength A · Lower","RPE 5","Light: Back squat 3×3 @ 60% · Treadmill push 3×12.5m · Mobility 15'"],
+  ["Run · Sharpen","Race pace","15' easy → 4×600m @ race pace, 2' jog → 10' easy"],
+  ["Strength B · Upper + Pull","RPE 4","Zone 2 25' + upper activation: band pull-aparts 3×15, push-ups 3×10"],
+  ["Stations","RPE 6","Openers: 4 × [500m run @ race pace + one station at 25%]"],
+  ["Rest","—","Full rest: hydrate, eat well, sleep"],
+  ["MAIN · HYROX","RPE 9–10","FINAL TEST: full HYROX simulation (or race day if your event lands here). Compare your total with Wk 16"],
+  ["Rest","—","Full rest. Block complete"]]}
+};
+
+const KICKOFF = ["Kick-off · Baseline test","Max","BASELINE: 15' warm-up → 1 km run time trial → 10' easy → 1,000m SkiErg → rest 5' → 1,000m Row → rest 5' → 100 wall balls (6kg) for time. Write down all four results"];
+
+const DAYN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function defaultStart(){ const n=new Date(); const t=Date.UTC(n.getFullYear(),n.getMonth(),n.getDate()); const dow=new Date(t).getUTCDay(); return t+((7-dow)%7)*86400000; }
+function readStart(){ try{ const v=localStorage.getItem("hyrox-start"); if(v&&/^\d{4}-\d{2}-\d{2}$/.test(v)){ const [y,m,d]=v.split("-").map(Number); return Date.UTC(y,m-1,d);} }catch(e){} return defaultStart(); }
+const START = readStart(); // week 1, day 1
+const END = START + (18*7-1)*86400000;
+const DAY = 86400000;
+const STATIONS = ["SkiErg","Push","Pull","BBJ","Row","Farmers","Lunges","Wall balls"];
+
+function sessionsFor(w){
+  if(w===0) return [{key:"0-6",w:0,date:new Date(START - DAY),dow:new Date(START - DAY).getUTCDay(),s:KICKOFF}];
+  return WEEKS[w].days.map((s,i)=>({key:w+"-"+i,w,date:new Date(START+((w-1)*7+i)*DAY),dow:new Date(START+((w-1)*7+i)*DAY).getUTCDay(),s}));
+}
+function typeOf(label){
+  if(label.startsWith("Strength")) return ["str","Strength"];
+  if(label.startsWith("Run")) return ["run","Run"];
+  if(label.startsWith("Stations")) return ["sta","Stations"];
+  if(label.startsWith("Optional")) return ["opt","Optional"];
+  if(label.startsWith("MAIN")) return ["main","Main"];
+  if(label.startsWith("Kick")) return ["test","Test"];
+  return ["rest","Rest"];
+}
+function fmt(d){return d.getUTCDate()+" "+MON[d.getUTCMonth()]}
+function todayUTC(){const n=new Date();return Date.UTC(n.getFullYear(),n.getMonth(),n.getDate())}
+function weekOf(t){const diff=Math.floor((t-START)/DAY); if(diff<0) return 0; return Math.min(18,Math.floor(diff/7)+1)}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+/* ---------- Alternatives ---------- */
+const ALT = [
+  [/^Back squat/i, ["Front squat","Goblet squat","Leg press","Hack squat","Safety-bar squat"]],
+  [/^Front squat/i, ["Back squat","Goblet squat","Leg press","Hack squat"]],
+  [/^Trap-bar (deadlift|DL)/i, ["Conventional deadlift","Sumo deadlift","Kettlebell deadlift","Hip thrust"]],
+  [/^Deadlift/i, ["Trap-bar deadlift","Sumo deadlift","Romanian deadlift"]],
+  [/^RDL/i, ["Single-leg RDL","Good morning","Hip thrust","45° back extension"]],
+  [/^(Bulgarian split squat|Split squat)/i, ["Reverse lunge","Step-up","Walking lunge","Single-leg leg press"]],
+  [/^Lunges/i, ["Bulgarian split squat","Step-up","Goblet walking lunge"]],
+  [/^(Heavy treadmill push|Treadmill push)/i, ["Plate push on a towel","Heavy goblet walking lunge","Leg press ×15–20"]],
+  [/^Rope pull/i, ["Heavy seated cable row","Battle-rope pull to a kettlebell","Inverted row"]],
+  [/^Strict press/i, ["Seated DB press","Landmine press","Arnold press","Machine shoulder press"]],
+  [/^Push press/i, ["DB push press","Landmine press","Strict press"]],
+  [/^(Bench press|DB bench)/i, ["DB bench press","Machine chest press","Weighted push-ups","Floor press"]],
+  [/^(Weighted pull-ups|Pull-ups)/i, ["Lat pulldown","Assisted pull-ups","Inverted row","Single-arm lat pulldown"]],
+  [/^(Rope\/cable row|Rope row|Pendlay row|Row 3×)/i, ["Chest-supported DB row","Seated cable row","Single-arm DB row","T-bar row"]],
+  [/^Farmers/i, ["Trap-bar carry","DB farmers carry","Suitcase carry"]],
+  [/^Pallof/i, ["Cable woodchop","Dead bug","Side plank"]]
+];
+const TESTS = {
+  "0-6":["1 km time trial","SkiErg 1,000m","Row 1,000m","100 wall balls"],
+  "4-1":["1 km time trial"],
+  "4-3":["SkiErg 1,000m","Row 1,000m","100 wall balls"]
+};
+
+function splitPart(p){ const m=/^([A-Z][A-Za-z ]*): /.exec(p); return m?{pre:m[0],body:p.slice(m[0].length)}:{pre:"",body:p}; }
+function altFor(body,t){ if(t==="run"||t==="rest") return null; for(const [re,list] of ALT){ if(re.test(body)) return {re,list}; } return null; }
+function setInfo(p){
+  const m=/(?:^|\s)(\d{1,2})×(max|\d+(?:\.\d+)?)(m?)/.exec(p);
+  if(!m) return null; const n=+m[1]; if(n<1||n>8) return null;
+  let unit="kg"; if(m[2]==="max"||/wall balls|BBJ/i.test(p)) unit="reps"; else if(m[3]==="m"&&!/Farmers/i.test(p)) unit="time";
+  return {n,unit};
+}
+function skipInput(body){ return /^(Core|Mobility|Zone 2|Full rest|Rest)/i.test(body); }
+function simRows(x){
+  if(typeOf(x.s[0])[0]!=="main") return null; const t=x.s[2];
+  if(/Half/i.test(t)){ const st=/back half/i.test(t)?STATIONS.slice(4):STATIONS.slice(0,4); return st.map(s=>"Run + "+s); }
+  if(/FULL HYROX|8 × \[1 km/.test(t)) return STATIONS.map(s=>"Run + "+s);
+  if(/4 × \[2 km/.test(t)) return ["Block 1","Block 2","Block 3","Block 4"];
+  if(/4 × \[1 km/.test(t)) return ["Round 1","Round 2","Round 3","Round 4"];
+  return null;
+}
+
+/* ---------- State ---------- */
+let state = {done:{},scores:{},swaps:{}};
+function norm(d){ d=d||{}; return {done:Object.assign({},d.done||{}),scores:JSON.parse(JSON.stringify(d.scores||{})),swaps:JSON.parse(JSON.stringify(d.swaps||{}))}; }
+try{ const s=localStorage.getItem("hyrox-state"); if(s) state=norm(JSON.parse(s)); else { const old=JSON.parse(localStorage.getItem("hyrox-done")||"{}"); if(old) state.done=old; } }catch(e){}
+function hasAny(){ return Object.keys(state.done).length||Object.keys(state.scores).length||Object.keys(state.swaps).length; }
+function sc(key){ return state.scores[key]||(state.scores[key]={}); }
+
+let docRef=null, saveTimer=null, writing=Promise.resolve(), dirty=false;
+const statusEl=()=>document.getElementById("syncStatus");
+function setStatus(k){ const m={saving:"Saving…",saved:"Saved to your account · syncs across devices",local:"Scores are saved in this browser. Use Export backup to move them to another device.",slow:"Can't reach your saved data yet. Changes stay on this device for now",err:"Couldn't save to your account. Changes kept on this device",full:"Storage is full. Changes kept on this device"}; const el=statusEl(); if(el) el.textContent=m[k]||""; }
+function persistLocal(){ try{localStorage.setItem("hyrox-state",JSON.stringify(state))}catch(e){} }
+function scheduleSave(){ persistLocal(); dirty=true; if(docRef) setStatus("saving"); clearTimeout(saveTimer); saveTimer=setTimeout(flush,700); }
+function flush(){
+  if(!docRef){ dirty=false; setStatus("local"); return; }
+  const body=JSON.parse(JSON.stringify(state));
+  writing=writing.then(()=>docRef.set(body)).then(()=>{ dirty=false; setStatus("saved"); })
+    .catch(e=>{ dirty=false; setStatus(e&&e.code==="quota_exceeded"?"full":"err"); });
+}
+
+/* ---------- Main page ---------- */
+const T = todayUTC();
+const curWeek = weekOf(T);
+const ALL = []; for(let w=0;w<=18;w++) sessionsFor(w).forEach(x=>ALL.push(x));
+const BYKEY = {}; ALL.forEach((x,i)=>{x.idx=i; BYKEY[x.key]=x;});
+const COUNTED = ALL.filter(x=>{const t=typeOf(x.s[0])[0]; return t!=="rest" && t!=="opt"});
+
+function logged(key){ const s=state.scores[key]; return s && Object.values(s).some(v=>v!==""&&v!=null&&(typeof v!=="object"||JSON.stringify(v)!=="{}")); }
+
+function stats(){
+  const nDone = ALL.filter(x=>state.done[x.key]).length;
+  const due = COUNTED.filter(x=>x.date.getTime()<=T);
+  const dueDone = due.filter(x=>state.done[x.key]).length;
+  document.getElementById("sDone").textContent = nDone;
+  document.getElementById("sBar").style.width = Math.min(100,Math.round(100*nDone/COUNTED.length))+"%";
+  document.getElementById("sComp").textContent = due.length? Math.round(100*Math.min(1,dueDone/due.length))+"%" : "—";
+  document.getElementById("sLeft").textContent = Math.max(0,Math.min(18,Math.ceil((END-T)/DAY/7)));
+}
+
+function renderToday(){
+  const el = document.getElementById("today");
+  let x = ALL.find(a=>a.date.getTime()===T);
+  let eyebrow = "Today · "+(x?DAYN[x.dow]+" "+fmt(x.date):"");
+  if(!x){
+    if(T < START-DAY){ x = ALL[0]; eyebrow = "First session · "+DAYN[x.dow]+" "+fmt(x.date); }
+    else { el.innerHTML = '<div class="eyebrow">Block complete</div><h3>All 18 weeks done</h3><p>Compare your final test with your Wk 16 simulation.</p>'; return; }
+  }
+  el.innerHTML = `<div class="eyebrow">${eyebrow} · ${x.w===0?"Kick-off":"Week "+x.w}</div><h3>${esc(x.s[0])}</h3><div class="target">Target: ${esc(x.s[1])}</div><p>${esc(x.s[2])}</p><button class="btn" id="todayOpen">Open and log this session</button>`;
+  document.getElementById("todayOpen").onclick=()=>{ location.hash="day-"+x.key; };
+}
+
+function renderPhases(){
+  document.getElementById("phases").innerHTML = PHASES.map(p=>`<div class="ph${curWeek>=p.from&&curWeek<=p.to?" on":""}"><b>${p.n}</b>${p.w}</div>`).join("");
+}
+
+let sel = curWeek, openKey = null;
+function renderWeeks(){
+  const nav = document.getElementById("weeks"); nav.innerHTML = "";
+  for(let w=0;w<=18;w++){
+    const b = document.createElement("button");
+    b.className = "wk"+(w===sel?" sel":"")+(w===curWeek?" cur":""); b.id = "wk-"+w;
+    b.innerHTML = (w===0?"GO":"W"+w)+`<small>${fmt(sessionsFor(w)[0].date)}</small>`;
+    b.setAttribute("aria-pressed", w===sel);
+    b.onclick = ()=>{ location.hash = "week-"+w; };
+    nav.appendChild(b);
+  }
+  const s = document.getElementById("wk-"+sel); if(s) s.scrollIntoView({block:"nearest",inline:"center"});
+}
+function phaseName(w){ if(w===0) return "Kick-off"; return PHASES.find(p=>w>=p.from&&w<=p.to).n; }
+
+function displayWorkout(x){
+  const sw=state.swaps[x.key]||{}; const t=typeOf(x.s[0])[0];
+  return x.s[2].split(" · ").map((p,i)=>{ if(!sw[i]) return p; const {pre,body}=splitPart(p); const a=altFor(body,t); return a? pre+body.replace(a.re,sw[i]) : p; }).join(" · ");
+}
+
+function renderWeek(){
+  const list = sessionsFor(sel);
+  const deload = sel>0 && WEEKS[sel].deload;
+  document.getElementById("wTitle").innerHTML = (sel===0?"Kick-off":"Week "+sel)+(deload?'<span class="tag">Deload</span>':"");
+  document.getElementById("wMeta").textContent = phaseName(sel)+" · "+fmt(list[0].date)+(list.length>1?" – "+fmt(list[list.length-1].date):"");
+  const box = document.getElementById("days"); box.innerHTML = "";
+  list.forEach(x=>{
+    const [t,label] = typeOf(x.s[0]);
+    const card = document.createElement("div");
+    card.className = "day"+(t==="main"?" main":"")+(x.date.getTime()===T?" is-today":"")+(state.done[x.key]?" done":"");
+    card.style.setProperty("--c",`var(--${t})`);
+    const chips = (logged(x.key)?'<span class="chip">Logged</span>':"")+(Object.keys(state.swaps[x.key]||{}).length?'<span class="chip">Swapped</span>':"");
+    card.innerHTML = `<div class="d"><b>${DAYN[x.dow]}</b><span>${fmt(x.date)}</span></div>
+      <button class="body open" aria-label="Open ${DAYN[x.dow]} ${fmt(x.date)} to log scores"><div class="top"><span class="pill">${label}</span><span class="target">${esc(x.s[1])}</span>${chips}</div>
+      <div class="sess">${esc(x.s[0])}</div><p class="wo">${esc(displayWorkout(x))}</p><span class="more">${t==="rest"?"Details":"Log scores & swaps"} ›</span></button>
+      <input type="checkbox" class="chk" aria-label="Mark ${DAYN[x.dow]} ${fmt(x.date)} done" ${state.done[x.key]?"checked":""}>`;
+    card.querySelector(".open").onclick=()=>{ location.hash="day-"+x.key; };
+    card.querySelector("input").addEventListener("change",e=>{
+      if(e.target.checked) state.done[x.key]=true; else delete state.done[x.key];
+      scheduleSave(); card.classList.toggle("done",e.target.checked); stats();
+    });
+    box.appendChild(card);
+  });
+}
+
+function renderBench(){
+  const tv=(k,n)=>{ const v=((state.scores[k]||{}).tests||{})[n]; return v?esc(v):"—"; };
+  const tot=k=>{ const v=(state.scores[k]||{}).total; return v?esc(v):"—"; };
+  const tests=["1 km time trial","SkiErg 1,000m","Row 1,000m","100 wall balls"];
+  const tk=n=>n==="1 km time trial"?"4-1":"4-3";
+  let h='<tr><th>Test</th><th>Baseline</th><th>Wk 4</th></tr>';
+  tests.forEach(n=>{ h+=`<tr><td>${n}</td><td class="num"><a href="#day-0-6">${tv("0-6",n)}</a></td><td class="num"><a href="#day-${tk(n)}">${tv(tk(n),n)}</a></td></tr>`; });
+  document.getElementById("benchTests").innerHTML=h;
+  const sims=[["4-5","Wk 4 · Half (front)"],["8-5","Wk 8 · Half (back) @ 80%"],["10-5","Wk 10 · Full @ 80%"],["14-5","Wk 14 · Full @ 85%"],["16-5","Wk 16 · Full race effort"],["17-5","Wk 17 · Half @ race pace"],["18-5","Wk 18 · Final test"]];
+  let s='<tr><th>Simulation</th><th>Total time</th></tr>';
+  sims.forEach(([k,n])=>{ s+=`<tr><td><a href="#day-${k}">${n}</a></td><td class="num">${tot(k)}</td></tr>`; });
+  document.getElementById("benchSims").innerHTML=s;
+}
+
+/* ---------- Detail view ---------- */
+function inp(f,attrs,val,ph,cls){ return `<input class="in ${cls||""}" data-f="${f}" ${attrs} value="${esc(val==null?"":val)}" placeholder="${esc(ph)}" inputmode="${cls==="num"?"decimal":"text"}">`; }
+
+function renderDetail(){
+  const x=BYKEY[openKey]; if(!x) return;
+  const [t,label]=typeOf(x.s[0]); const s=state.scores[x.key]||{}; const sw=state.swaps[x.key]||{};
+  let h=`<div class="dhead" style="--c:var(--${t})"><div class="eyebrow">${x.w===0?"Kick-off":"Week "+x.w} · ${DAYN[x.dow]} ${fmt(x.date)} · ${phaseName(x.w)}</div>
+    <h2>${esc(x.s[0])}</h2><div class="top"><span class="pill">${label}</span><span class="target">Target: ${esc(x.s[1])}</span></div>
+    <button class="btn ${state.done[x.key]?"on":""}" data-act="done">${state.done[x.key]?"✓ Done":"Mark as done"}</button></div>`;
+
+  const rows=simRows(x);
+  if(t!=="rest"){
+    h+=`<h3 class="sh">Workout</h3><div class="parts">`;
+    x.s[2].split(" · ").forEach((p,i)=>{
+      const {pre,body}=splitPart(p); const a=altFor(body,t); const chosen=sw[i];
+      const shown = chosen&&a ? pre+body.replace(a.re,chosen) : p;
+      h+=`<div class="part"><div class="ptop"><div class="pname">${esc(shown)}${chosen?`<div class="planned">Planned: ${esc(p)}</div>`:""}</div>`;
+      if(a) h+=`<button class="swapbtn" data-act="swap" data-i="${i}" aria-expanded="false">Alternatives</button>`;
+      h+=`</div>`;
+      if(a) h+=`<div class="alts" id="alts-${i}" hidden>${a.list.map(n=>`<button class="altc ${chosen===n?"on":""}" data-act="alt" data-i="${i}" data-n="${esc(n)}">${esc(n)}</button>`).join("")}${chosen?`<button class="altc ghost" data-act="alt" data-i="${i}" data-n="">Back to planned</button>`:""}<div class="note">Keep the same sets, reps and effort.</div></div>`;
+      if(!skipInput(body) && !TESTS[x.key] && !rows){
+        const si=setInfo(body);
+        if(si){
+          const vals=((s.sets||{})[i])||[];
+          h+=`<div class="sets">`;
+          for(let j=0;j<si.n;j++) h+=`<label class="set"><span>Set ${j+1}</span>${inp("set",`data-i="${i}" data-j="${j}" aria-label="Set ${j+1} ${si.unit}"`,vals[j],si.unit,si.unit==="time"?"":"num")}</label>`;
+          h+=`</div>`;
+        } else {
+          h+=inp("res",`data-i="${i}" aria-label="Result"`,((s.res||{})[i]),"Result: time, load or reps","wide");
+        }
+      }
+      h+=`</div>`;
+    });
+    h+=`</div>`;
+  } else {
+    h+=`<p class="wo">${esc(x.s[2])}</p>`;
+  }
+
+  if(TESTS[x.key]){
+    h+=`<h3 class="sh">Test results</h3><div class="grid2">`;
+    TESTS[x.key].forEach(n=>{ h+=`<label class="set"><span>${esc(n)}</span>${inp("test",`data-n="${esc(n)}"`,((s.tests||{})[n]),n.includes("wall")?"mm:ss":"mm:ss","")}</label>`; });
+    h+=`</div>`;
+  }
+
+  if(rows){
+    const sp=s.splits||{};
+    h+=`<h3 class="sh">Splits</h3><div class="tbl"><table class="splits"><tr><th></th><th>Run</th><th>Station</th></tr>`;
+    rows.forEach((r,j)=>{ h+=`<tr><td>${esc(r)}</td><td>${inp("split",`data-k="run" data-j="${j}" aria-label="${esc(r)} run time"`,(sp.run||[])[j],"m:ss","")}</td><td>${inp("split",`data-k="st" data-j="${j}" aria-label="${esc(r)} station time"`,(sp.st||[])[j],"m:ss","")}</td></tr>`; });
+    h+=`</table></div>`;
+  }
+
+  if(t!=="rest"){
+    h+=`<h3 class="sh">How it went</h3>`;
+    if(t==="main"||t==="run"||t==="sta"||t==="test") h+=`<label class="set wide"><span>Total time</span>${inp("total","",s.total,"e.g. 1:18:40","")}</label>`;
+    h+=`<div class="rpe-l">Actual RPE</div><div class="rpe">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="rc ${s.rpe===n?"on":""}" data-act="rpe" data-n="${n}" aria-pressed="${s.rpe===n}">${n}</button>`).join("")}</div>`;
+    h+=`<label class="set wide"><span>Notes</span><textarea class="in" data-f="notes" rows="3" placeholder="How you felt, what to change next time">${esc(s.notes||"")}</textarea></label>`;
+  }
+
+  const prev=ALL[x.idx-1], next=ALL[x.idx+1];
+  h+=`<div class="dnav">${prev?`<a class="btn ghost" href="#day-${prev.key}">‹ ${DAYN[prev.dow]} ${fmt(prev.date)}</a>`:"<span></span>"}${next?`<a class="btn ghost" href="#day-${next.key}">${DAYN[next.dow]} ${fmt(next.date)} ›</a>`:""}</div>`;
+  document.getElementById("dBody").innerHTML=h;
+  document.getElementById("back").textContent="‹ Back to "+(x.w===0?"kick-off":"week "+x.w);
+}
+
+document.getElementById("dBody").addEventListener("input",e=>{
+  const el=e.target; const f=el.dataset.f; if(!f||!openKey) return; const s=sc(openKey); const v=el.value;
+  if(f==="set"){ s.sets=s.sets||{}; const a=(s.sets[el.dataset.i]=s.sets[el.dataset.i]||[]); a[+el.dataset.j]=v; for(let k=0;k<a.length;k++) if(a[k]==null) a[k]=""; }
+  else if(f==="res"){ s.res=s.res||{}; s.res[el.dataset.i]=v; }
+  else if(f==="test"){ s.tests=s.tests||{}; s.tests[el.dataset.n]=v; }
+  else if(f==="split"){ s.splits=s.splits||{}; const a=(s.splits[el.dataset.k]=s.splits[el.dataset.k]||[]); a[+el.dataset.j]=v; for(let k=0;k<a.length;k++) if(a[k]==null) a[k]=""; }
+  else if(f==="total") s.total=v;
+  else if(f==="notes") s.notes=v;
+  scheduleSave();
+});
+document.getElementById("dBody").addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]"); if(!b||!openKey) return; const act=b.dataset.act;
+  if(act==="swap"){ const box=document.getElementById("alts-"+b.dataset.i); box.hidden=!box.hidden; b.setAttribute("aria-expanded",!box.hidden); return; }
+  if(act==="alt"){ const m=(state.swaps[openKey]=state.swaps[openKey]||{}); if(b.dataset.n) m[b.dataset.i]=b.dataset.n; else delete m[b.dataset.i]; if(!Object.keys(m).length) delete state.swaps[openKey]; }
+  if(act==="rpe"){ const s=sc(openKey); const n=+b.dataset.n; s.rpe = s.rpe===n?null:n; }
+  if(act==="done"){ if(state.done[openKey]) delete state.done[openKey]; else state.done[openKey]=true; stats(); }
+  scheduleSave(); renderDetail();
+});
+document.getElementById("back").onclick=()=>{ const x=BYKEY[openKey]; location.hash="week-"+(x?x.w:sel); };
+
+function openDetail(key){
+  openKey=key; renderDetail();
+  const d=document.getElementById("detail"); d.hidden=false; d.scrollTop=0; document.body.style.overflow="hidden";
+}
+function closeDetail(){ if(openKey===null) return; openKey=null; document.getElementById("detail").hidden=true; document.body.style.overflow=""; renderWeek(); renderBench(); }
+
+function route(){
+  const d = /^#day-(\d{1,2})-(\d)$/.exec(location.hash);
+  if(d && BYKEY[d[1]+"-"+d[2]]){ sel=+d[1]; renderWeeks(); renderWeek(); openDetail(d[1]+"-"+d[2]); return; }
+  closeDetail();
+  const m = /^#week-(\d{1,2})$/.exec(location.hash);
+  sel = m ? Math.min(18,Math.max(0,+m[1])) : (sel==null?curWeek:sel);
+  renderWeeks(); renderWeek();
+}
+window.addEventListener("hashchange",route);
+
+function rerender(){
+  stats(); renderWeek(); renderBench();
+  if(openKey && !document.getElementById("detail").contains(document.activeElement)) renderDetail();
+}
+
+stats(); renderToday(); renderPhases(); renderBench(); setStatus("local"); route();
+
+
+/* ---------- Start date + backup ---------- */
+(function(){
+  const sd=document.getElementById("startDate");
+  const d=new Date(START); sd.value=d.toISOString().slice(0,10);
+  sd.addEventListener("change",()=>{ if(!sd.value) return; try{ localStorage.setItem("hyrox-start",sd.value); }catch(e){} location.hash=""; location.reload(); });
+  document.getElementById("exportBtn").onclick=()=>{
+    let start=""; try{ start=localStorage.getItem("hyrox-start")||sd.value; }catch(e){ start=sd.value; }
+    const blob=new Blob([JSON.stringify({app:"hyrox-18",start,state},null,2)],{type:"application/json"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="hyrox-backup.json"; document.body.appendChild(a); a.click(); a.remove();
+  };
+  document.getElementById("importFile").addEventListener("change",async e=>{
+    const f=e.target.files[0]; if(!f) return;
+    try{ const j=JSON.parse(await f.text()); if(!j||j.app!=="hyrox-18"||!j.state) throw 0;
+      state=norm(j.state); persistLocal(); if(j.start) try{ localStorage.setItem("hyrox-start",j.start); }catch(_){}
+      location.reload();
+    }catch(err){ const el=document.getElementById("syncStatus"); if(el) el.textContent="That file isn't a backup from this site. Choose the hyrox-backup.json you exported."; }
+  });
+})();
+</script>
+</body>
+</html>
