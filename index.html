@@ -88,6 +88,7 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 ul.rules{margin:0;padding:12px 14px 12px 32px;background:var(--surface);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;gap:6px;font-size:15px}
 .note{color:var(--muted);font-size:13px}
 
+.donenote{font-weight:600;color:var(--run);font-size:15px}
 .status{color:var(--muted);font-size:13px;margin-top:-12px}
 .btn{font:inherit;font-weight:600;font-size:15px;padding:10px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;align-self:flex-start;text-decoration:none;display:inline-block}
 .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
@@ -164,6 +165,8 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
   <div class="status" id="syncStatus" role="status"></div>
 
   <div class="today" id="today"></div>
+
+  <section class="ref" id="targets"></section>
 
   <div class="phases" id="phases"></div>
 
@@ -514,6 +517,7 @@ const COUNTED = ALL.filter(x=>{const t=typeOf(x.s[0])[0]; return t!=="rest" && t
 function logged(key){ const s=state.scores[key]; return s && Object.values(s).some(v=>v!==""&&v!=null&&(typeof v!=="object"||JSON.stringify(v)!=="{}")); }
 
 function stats(){
+  renderToday(); renderTargets();
   const nDone = ALL.filter(x=>state.done[x.key]).length;
   const due = COUNTED.filter(x=>x.date.getTime()<=T);
   const dueDone = due.filter(x=>state.done[x.key]).length;
@@ -526,13 +530,52 @@ function stats(){
 function renderToday(){
   const el = document.getElementById("today");
   let x = ALL.find(a=>a.date.getTime()===T);
-  let eyebrow = "Today · "+(x?DAYN[x.dow]+" "+fmt(x.date):"");
+  let eyebrow = x ? "Today · "+DAYN[x.dow]+" "+fmt(x.date) : "";
+  let doneNote = "";
   if(!x){
     if(T < START-DAY){ x = ALL[0]; eyebrow = "First session · "+DAYN[x.dow]+" "+fmt(x.date); }
     else { el.innerHTML = '<div class="eyebrow">Block complete</div><h3>All 18 weeks done</h3><p>Compare your final test with your Wk 16 simulation.</p>'; return; }
   }
-  el.innerHTML = `<div class="eyebrow">${eyebrow} · ${x.w===0?"Kick-off":"Week "+x.w}</div><h3>${esc(x.s[0])}</h3><div class="target">Target: ${esc(x.s[1])}</div><p>${esc(x.s[2])}</p><button class="btn" id="todayOpen">Open and log this session</button>`;
+  if(state.done[x.key] || typeOf(x.s[0])[0]==="rest"){
+    const nx = ALL.slice(x.idx+1).find(a=>typeOf(a.s[0])[0]!=="rest" && !state.done[a.key]);
+    doneNote = state.done[x.key] ? `<div class="donenote">✓ Today's session is done${typeOf(x.s[0])[0]==="rest"?"":": "+esc(x.s[0])}</div>` : `<div class="donenote">Rest day today</div>`;
+    if(!nx){ el.innerHTML = doneNote+'<h3>Block complete</h3>'; return; }
+    x = nx; eyebrow = "Next session · "+DAYN[x.dow]+" "+fmt(x.date);
+  }
+  el.innerHTML = `${doneNote}<div class="eyebrow">${eyebrow} · ${x.w===0?"Kick-off":"Week "+x.w}</div><h3>${esc(x.s[0])}</h3><div class="target">Target: ${esc(tgt(x))}</div><p>${esc(displayWorkout(x))}</p><button class="btn" id="todayOpen">Open and log this session</button>`;
   document.getElementById("todayOpen").onclick=()=>{ location.hash="day-"+x.key; };
+}
+
+/* ---------- Pace targets from your tests ---------- */
+function secs(v){ if(!v) return null; const p=String(v).trim().split(":").map(Number); if(p.some(isNaN)) return null; return p.length===3?p[0]*3600+p[1]*60+p[2]:p.length===2?p[0]*60+p[1]:null; }
+function mmss(t){ t=Math.round(t); return Math.floor(t/60)+":"+String(t%60).padStart(2,"0"); }
+function testVal(name){ for(const k of ["4-1","4-3","0-6"]){ const v=secs(((state.scores[k]||{}).tests||{})[name]); if(v) return v; } return null; }
+function paces(){
+  const km=testVal("1 km time trial"); if(!km) return null;
+  const r=(a,b)=>mmss(km*a)+"–"+mmss(km*b)+"/km";
+  return {race:r(1.15,1.20), thr:r(1.10,1.14), tempo:r(1.13,1.17), fast:r(1.05,1.09), z2:r(1.33,1.42)};
+}
+function tgt(x){
+  const base=x.s[1]; const p=paces(); if(!p) return base; const t=typeOf(x.s[0])[0]; const txt=x.s[2];
+  if(base==="Race pace" && (t==="run"||t==="main")) return base+" · "+p.race;
+  if(t==="run"){
+    if(base==="Faster than race") return base+" · "+p.fast;
+    if(base==="Zone 2") return base+" · "+p.z2;
+    if(base==="RPE 7") return base+" · "+p.tempo;
+    if(/^RPE (7–8|8)$/.test(base)) return base+" · "+p.thr;
+  }
+  if(base.startsWith("Zone 2") && /run/i.test(txt)) return base+" · "+p.z2;
+  return base;
+}
+function renderTargets(){
+  const el=document.getElementById("targets"); if(!el) return; const p=paces();
+  const ski=testVal("SkiErg 1,000m"), row=testVal("Row 1,000m"), wb=testVal("100 wall balls");
+  if(!p){ el.innerHTML='<h2>Your targets</h2><div class="note">Log your 1 km time trial in the kick-off session and your run paces appear here and in every running session.</div>'; return; }
+  const rows=[["Race pace (HYROX run legs)",p.race],["Threshold runs",p.thr],["Tempo runs",p.tempo],["Speed reps (faster than race)",p.fast],["Zone 2 / easy",p.z2]];
+  if(ski) rows.push(["SkiErg 1,000m in a race",mmss(ski*1.05)+"–"+mmss(ski*1.09)]);
+  if(row) rows.push(["Row 1,000m in a race",mmss(row*1.06)+"–"+mmss(row*1.10)]);
+  if(wb) rows.push(["100 wall balls in a race",mmss(wb*1.05)+"–"+mmss(wb*1.15)+" · sets of 15–20"]);
+  el.innerHTML='<h2>Your targets</h2><div class="tbl"><table><tr><th>What</th><th>Target</th></tr>'+rows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td></tr>`).join("")+'</table></div><div class="note">From your latest test. They update by themselves after your week 4 retest.</div>';
 }
 
 function renderPhases(){
@@ -572,7 +615,7 @@ function renderWeek(){
     card.style.setProperty("--c",`var(--${t})`);
     const chips = (logged(x.key)?'<span class="chip">Logged</span>':"")+(Object.keys(state.swaps[x.key]||{}).length?'<span class="chip">Swapped</span>':"");
     card.innerHTML = `<div class="d"><b>${DAYN[x.dow]}</b><span>${fmt(x.date)}</span></div>
-      <button class="body open" aria-label="Open ${DAYN[x.dow]} ${fmt(x.date)} to log scores"><div class="top"><span class="pill">${label}</span><span class="target">${esc(x.s[1])}</span>${chips}</div>
+      <button class="body open" aria-label="Open ${DAYN[x.dow]} ${fmt(x.date)} to log scores"><div class="top"><span class="pill">${label}</span><span class="target">${esc(tgt(x))}</span>${chips}</div>
       <div class="sess">${esc(x.s[0])}</div><p class="wo">${esc(displayWorkout(x))}</p><span class="more">${t==="rest"?"Details":"Log scores & swaps"} ›</span></button>
       <input type="checkbox" class="chk" aria-label="Mark ${DAYN[x.dow]} ${fmt(x.date)} done" ${state.done[x.key]?"checked":""}>`;
     card.querySelector(".open").onclick=()=>{ location.hash="day-"+x.key; };
@@ -605,7 +648,7 @@ function renderDetail(){
   const x=BYKEY[openKey]; if(!x) return;
   const [t,label]=typeOf(x.s[0]); const s=state.scores[x.key]||{}; const sw=state.swaps[x.key]||{};
   let h=`<div class="dhead" style="--c:var(--${t})"><div class="eyebrow">${x.w===0?"Kick-off":"Week "+x.w} · ${DAYN[x.dow]} ${fmt(x.date)} · ${phaseName(x.w)}</div>
-    <h2>${esc(x.s[0])}</h2><div class="top"><span class="pill">${label}</span><span class="target">Target: ${esc(x.s[1])}</span></div>
+    <h2>${esc(x.s[0])}</h2><div class="top"><span class="pill">${label}</span><span class="target">Target: ${esc(tgt(x))}</span></div>
     <button class="btn ${state.done[x.key]?"on":""}" data-act="done">${state.done[x.key]?"✓ Done":"Mark as done"}</button></div>`;
 
   const rows=simRows(x);
@@ -666,7 +709,7 @@ document.getElementById("dBody").addEventListener("input",e=>{
   const el=e.target; const f=el.dataset.f; if(!f||!openKey) return; const s=sc(openKey); const v=el.value;
   if(f==="set"){ s.sets=s.sets||{}; const a=(s.sets[el.dataset.i]=s.sets[el.dataset.i]||[]); a[+el.dataset.j]=v; for(let k=0;k<a.length;k++) if(a[k]==null) a[k]=""; }
   else if(f==="res"){ s.res=s.res||{}; s.res[el.dataset.i]=v; }
-  else if(f==="test"){ s.tests=s.tests||{}; s.tests[el.dataset.n]=v; }
+  else if(f==="test"){ s.tests=s.tests||{}; s.tests[el.dataset.n]=v; renderTargets(); }
   else if(f==="split"){ s.splits=s.splits||{}; const a=(s.splits[el.dataset.k]=s.splits[el.dataset.k]||[]); a[+el.dataset.j]=v; for(let k=0;k<a.length;k++) if(a[k]==null) a[k]=""; }
   else if(f==="total") s.total=v;
   else if(f==="notes") s.notes=v;
@@ -703,7 +746,7 @@ function rerender(){
   if(openKey && !document.getElementById("detail").contains(document.activeElement)) renderDetail();
 }
 
-stats(); renderToday(); renderPhases(); renderBench(); setStatus("local"); route();
+stats(); renderPhases(); renderBench(); setStatus("local"); route();
 
 
 /* ---------- Start date + backup ---------- */
