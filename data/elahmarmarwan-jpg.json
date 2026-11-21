@@ -1,0 +1,21 @@
+{
+ "app": "hyrox-18",
+ "state": {
+  "done": {
+   "0-6": true
+  },
+  "scores": {
+   "0-6": {
+    "tests": {
+     "1 km time trial": "5:24",
+     "SkiErg 1,000m": "4:54",
+     "Row 1,000m": "4:20",
+     "100 wall balls": "7:50"
+    }
+   }
+  },
+  "swaps": {}
+ },
+ "start": "2026-11-22",
+ "updated": "2026-11-21T17:05:15.671Z"
+}
