@@ -197,9 +197,9 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
       <tr><td>Mon</td><td>Run</td><td>Threshold and race-pace work for your 1 km pace</td></tr>
       <tr><td>Tue</td><td>Strength B · Upper + Pull</td><td>Press, pull, grip, farmers carry, plus a Zone 2 flush</td></tr>
       <tr><td>Wed</td><td>Stations</td><td>Capacity first, then race pace under fatigue</td></tr>
-      <tr><td>Thu</td><td>Optional · Zone 2 / Power</td><td>6th day. Pick Power for a 3rd strength day. First to drop in a busy week</td></tr>
+      <tr><td>Thu</td><td>Rest</td><td>Full rest so you arrive fresh for the main session</td></tr>
       <tr><td>Fri</td><td>MAIN · HYROX</td><td>Compromised running, half and full simulations</td></tr>
-      <tr><td>Sat</td><td>Rest</td><td>Rest, walk, mobility</td></tr>
+      <tr><td>Sat</td><td>Optional · Zone 2 / Power</td><td>6th day: easy Zone 2 flush after Friday, or Power for a 3rd strength day. First to drop in a busy week</td></tr>
     </table></div>
     <div class="note">Days shown for a Sunday start. Starting on another day keeps the same order: the main session is always day 6.</div>
   </section>
@@ -233,7 +233,7 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
   <section class="ref">
     <h2>Rules of the block</h2>
     <ul class="rules">
-      <li>Missed a session? Drop Thursday first, then Wednesday. Protect Friday.</li>
+      <li>Missed a session? Drop Saturday first, then Wednesday. Protect Friday, and keep Thursday as rest.</li>
       <li>Deload weeks 4, 8 and 12 are part of the plan. Don't add work back in.</li>
       <li>Pick loads that hit the RPE shown; add 2.5–5 kg when every set feels easier than target.</li>
       <li>Tests: baseline on kick-off day, retest Wk 4, half sims Wk 4 and Wk 8, full sims Wk 10, 14, 16 and 18.</li>
@@ -342,7 +342,7 @@ const WEEKS = {
   ["Run · Threshold+","RPE 8","15' warm-up → 3×2 km slightly faster than race pace, 2' jog → 10' cool-down"],
   ["Strength B · Upper + Pull","RPE 8","Push press 4×3 · Weighted pull-ups 4×4 · Complex ×4: Rope pull 25m + farmers 100m · Zone 2 35'"],
   ["Stations","Race pace","Back-half stations at race pace, 500m run between: Row 1,000m → Farmers 200m → Lunges 100m → 100 wall balls"],
-  ["Optional · Zone 2 / Power","Zone 2","Zone 2 run 40' + 6 strides (keep it easy before Friday)"],
+  ["Optional · Zone 2 / Power","Zone 2","Zone 2 run 40' + 6 strides, easy recovery pace"],
   ["MAIN · HYROX","RPE 7–8 (80%)","FULL HYROX SIMULATION @ 80% effort: 8×1 km + all 8 stations (race weights, push/pull swaps). First full run-through: learn your pacing, log every split"],
   REST_FULL]},
  11:{deload:false,days:[
@@ -411,6 +411,8 @@ const WEEKS = {
   ["Rest","—","Full rest. Block complete"]]}
 };
 
+// Week layout: Thursday = rest before the main session, Saturday = optional 6th session (weeks 1-17; week 18 is race week)
+for(let w=1;w<=17;w++){ const d=WEEKS[w].days; const t=d[4]; d[4]=d[6]; d[6]=t; }
 const KICKOFF = ["Kick-off · Baseline test","Max","BASELINE: 15' warm-up → 1 km run time trial → 10' easy → 1,000m SkiErg → rest 5' → 1,000m Row → rest 5' → 100 wall balls (6kg) for time. Write down all four results"];
 
 const DAYN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
