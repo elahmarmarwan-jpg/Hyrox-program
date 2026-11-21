@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 [hidden]{display:none!important}
+.ghbox{border:1px solid currentColor;border-radius:10px;padding:14px 16px;margin:10px 0;font-size:14px;line-height:1.5}
+.ghbox ol{margin:6px 0 10px 18px;padding:0}.ghbox a{color:inherit;text-decoration:underline}
+.ghrow{display:flex;gap:8px;flex-wrap:wrap}.ghrow .in{flex:1;min-width:200px}
+.ghmsg{margin-top:8px;font-size:13px;opacity:.85}
 /* Layout: one column training log — summary + today first, phase strip, week tabs, day cards, reference below */
 :root{
   --bg:#f4f5f7; --surface:#ffffff; --ink:#151a22; --muted:#5d6675; --line:#dfe3e9;
@@ -154,6 +158,7 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
       <button class="btn ghost" id="exportBtn" type="button">Export backup</button>
       <label class="btn ghost" for="importFile">Import backup</label>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
+      <button class="btn" id="ghBtn" type="button" hidden>Sync my devices</button>
     </div>
   </header>
 
@@ -164,6 +169,18 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
   </div>
 
   <div class="status" id="syncStatus" role="status"></div>
+  <div class="ghbox" id="ghBox" hidden>
+    <b>Sync this device</b>
+    <p>Do this once on each device (phone, laptop). Your logs are saved to GitHub and every connected device updates within seconds.</p>
+    <ol>
+      <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → new fine-grained token</a> (signed in as elahmarmarwan-jpg).</li>
+      <li>Name it "HYROX sync", set an expiry, Repository access: <b>Only select repositories → Hyrox-program</b>.</li>
+      <li>Permissions → Repository → <b>Contents: Read and write</b>. Generate, copy it.</li>
+      <li>Paste it below. It stays on this device only.</li>
+    </ol>
+    <div class="ghrow"><input type="password" id="ghTok" class="in" placeholder="github_pat_…" autocomplete="off"><button class="btn" id="ghSave" type="button">Connect</button><button class="btn ghost" id="ghCancel" type="button">Cancel</button></div>
+    <div class="ghmsg" id="ghMsg"></div>
+  </div>
 
   <div class="today" id="today"></div>
 
@@ -781,6 +798,79 @@ stats(); renderPhases(); renderBench(); setStatus("local"); route();
   }catch(e){ clearTimeout(slow); setStatus("err"); }
 })();
 
+
+/* ---------- Sync across devices via GitHub (github.io site) ---------- */
+(function(){
+  if(window.claude && typeof window.claude.use==="function") return; // inside Claude the account sync above is used
+  const GH={owner:"elahmarmarwan-jpg",repo:"Hyrox-program",branch:"data"};
+  const $=(i)=>document.getElementById(i), LS=(k,v)=>{ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){ return null; } };
+  const btn=$("ghBtn"), box=$("ghBox"), msg=$("ghMsg");
+  btn.hidden=false;
+  let token=LS("hyrox-gh-token"), path=null, sha=null, polling=null;
+  const b64e=(t)=>btoa(unescape(encodeURIComponent(t))), b64d=(t)=>decodeURIComponent(escape(atob(String(t).replace(/\s/g,""))));
+  const localUpdated=()=>LS("hyrox-updated")||"";
+  const api=(p,opt={})=>fetch("https://api.github.com"+p,Object.assign({cache:"no-store"},opt,{headers:Object.assign({Authorization:"Bearer "+token,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},opt.headers||{})}));
+  async function resolvePath(){
+    let login=LS("hyrox-gh-login");
+    if(!login){ const r=await api("/user"); if(r.status===401) throw {code:401}; if(r.ok){ login=(await r.json()).login; LS("hyrox-gh-login",login); } }
+    path="data/"+String(login||"athlete").toLowerCase()+".json";
+  }
+  async function pull(){
+    const r=await api("/repos/"+GH.owner+"/"+GH.repo+"/contents/"+path+"?ref="+GH.branch+"&t="+Date.now());
+    if(r.status===404){ sha=null; return null; }
+    if(r.status===401) throw {code:401};
+    if(!r.ok) throw {code:r.status};
+    const j=await r.json(); sha=j.sha;
+    try{ return JSON.parse(b64d(j.content)); }catch(e){ return null; }
+  }
+  function apply(d){
+    if(!d||!d.state||!(d.updated>localUpdated())) return;
+    state=norm(d.state); persistLocal(); LS("hyrox-updated",d.updated);
+    if(d.start && d.start!==(LS("hyrox-start")||"")){ LS("hyrox-start",d.start); location.reload(); return; }
+    rerender();
+  }
+  const adapter={ set: async(body)=>{
+    LS("hyrox-updated",body.updated);
+    for(let i=0;i<3;i++){
+      const r=await api("/repos/"+GH.owner+"/"+GH.repo+"/contents/"+path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({message:"HYROX log "+body.updated,content:b64e(JSON.stringify(body,null,1)),branch:GH.branch},sha?{sha}:{}))});
+      if(r.ok){ sha=(await r.json()).content.sha; return; }
+      if(r.status===409||r.status===422){ await pull(); continue; }
+      if(r.status===401) fail("Your GitHub key was rejected. Tap Sync my devices to reconnect.");
+      throw {code:r.status};
+    }
+    throw {code:"conflict"};
+  } };
+  function fail(t){ docRef=null; clearInterval(polling); const el=$("syncStatus"); if(el) el.textContent=t; btn.textContent="Sync my devices"; }
+  async function start(){
+    try{
+      await resolvePath();
+      const d=await pull();
+      docRef=adapter;
+      if(d && d.updated>localUpdated()) apply(d);
+      else if(hasAny() && (!d || localUpdated()>(d.updated||""))) flush();
+      const el=$("syncStatus"); if(el) el.textContent="Synced with GitHub · this device updates automatically";
+      btn.textContent="Synced ✓";
+      clearInterval(polling);
+      const tick=async()=>{ if(document.hidden||dirty) return; try{ apply(await pull()); }catch(e){ if(e&&e.code===401) fail("Your GitHub key was rejected. Tap Sync my devices to reconnect."); } };
+      polling=setInterval(tick,15000);
+      document.addEventListener("visibilitychange",()=>{ if(!document.hidden) tick(); });
+      window.addEventListener("focus",tick);
+      return true;
+    }catch(e){
+      if(e&&e.code===401){ LS("hyrox-gh-token",null); token=null; fail("That GitHub key didn't work. Check it has Contents: Read and write on Hyrox-program."); }
+      else { const el=$("syncStatus"); if(el) el.textContent="Can't reach GitHub right now. Changes stay on this device and sync when it's back."; setTimeout(start,30000); }
+      return false;
+    }
+  }
+  btn.onclick=()=>{ box.hidden=!box.hidden; msg.textContent=token?"This device is connected. Paste a new key to replace it.":""; };
+  $("ghCancel").onclick=()=>{ box.hidden=true; };
+  $("ghSave").onclick=async()=>{
+    const t=$("ghTok").value.trim(); if(!t){ msg.textContent="Paste the key first."; return; }
+    token=t; LS("hyrox-gh-token",t); LS("hyrox-gh-login",null); msg.textContent="Connecting…";
+    if(await start()){ $("ghTok").value=""; box.hidden=true; } else msg.textContent=($("syncStatus")||{}).textContent||"Couldn't connect.";
+  };
+  if(token) start();
+})();
 
 /* ---------- Start date + backup ---------- */
 (function(){
