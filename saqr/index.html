@@ -125,30 +125,33 @@ const HX_URL = "https://elahmarmarwan-jpg.github.io/Hyrox-program/";
 const DAYN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
 /* ---------- GitHub data ---------- */
-const GH = { owner:"elahmarmarwan-jpg", repo:"Hyrox-program", branch:"data", snap:"data/saqr.json", actions:"data/saqr-actions.json" };
+const GH = { owner:"elahmarmarwan-jpg", repo:"Hyrox-program", branch:"data" };
+const PRIV = { owner:"elahmarmarwan-jpg", repo:"saqr-data", branch:"main" }; // private: SAQR board, outputs, watch
+const SNAP = { loc:PRIV, path:"saqr.json" }, ACTIONS = { loc:PRIV, path:"actions.json" };
 const LS = (k,v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
 let token = LS("hyrox-gh-token");
 const logPath = () => "data/" + String(LS("hyrox-gh-login") || "elahmarmarwan-jpg").toLowerCase() + ".json";
 const b64e = (t) => btoa(unescape(encodeURIComponent(t))), b64d = (t) => decodeURIComponent(escape(atob(String(t).replace(/\s/g, ""))));
 const api = (p, opt = {}) => fetch("https://api.github.com" + p, Object.assign({ cache:"no-store" }, opt, { headers: Object.assign({ Accept:"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" }, token ? { Authorization:"Bearer " + token } : {}, opt.headers || {}) }));
 const shas = {};
-async function readFile(path) {
+async function readFile(path, loc = GH) {
   if (token) {
-    const r = await api("/repos/" + GH.owner + "/" + GH.repo + "/contents/" + path + "?ref=" + GH.branch + "&t=" + Date.now());
+    const r = await api("/repos/" + loc.owner + "/" + loc.repo + "/contents/" + path + "?ref=" + loc.branch + "&t=" + Date.now());
     if (r.status === 404) { shas[path] = null; return null; }
     if (r.status === 401) { token = null; throw { code:401 }; }
     if (!r.ok) throw { code:r.status };
     const j = await r.json(); shas[path] = j.sha; return JSON.parse(b64d(j.content));
   }
+  if (loc !== GH) return null;
   const r = await fetch("https://raw.githubusercontent.com/" + GH.owner + "/" + GH.repo + "/" + GH.branch + "/" + path + "?t=" + Date.now(), { cache:"no-store" });
   if (r.status === 404) return null; if (!r.ok) throw { code:r.status }; return r.json();
 }
-async function writeFile(path, mutate, message) {
+async function writeFile(path, mutate, message, loc = GH) {
   if (!token) throw { code:"notoken" };
   for (let i = 0; i < 3; i++) {
-    const cur = await readFile(path);
+    const cur = await readFile(path, loc);
     const next = mutate(cur);
-    const r = await api("/repos/" + GH.owner + "/" + GH.repo + "/contents/" + path, { method:"PUT", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(Object.assign({ message, content: b64e(JSON.stringify(next, null, 1)), branch: GH.branch }, shas[path] ? { sha: shas[path] } : {})) });
+    const r = await api("/repos/" + loc.owner + "/" + loc.repo + "/contents/" + path, { method:"PUT", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(Object.assign({ message, content: b64e(JSON.stringify(next, null, 1)), branch: loc.branch }, shas[path] ? { sha: shas[path] } : {})) });
     if (r.ok) { shas[path] = (await r.json()).content.sha; return next; }
     if (r.status === 409 || r.status === 422) continue;
     throw { code:r.status };
@@ -186,11 +189,11 @@ function scoreText(key) { const sc = hlog && hlog.state && hlog.state.scores && 
 async function refresh(quiet) {
   if (!quiet) setStatus("warn", "Syncing…");
   try {
-    const [s, h] = await Promise.all([readFile(GH.snap), readFile(logPath())]);
+    const [s, h] = await Promise.all([readFile(SNAP.path, SNAP.loc).catch((e) => { if (e && e.code === 401) throw e; return null; }), readFile(logPath())]);
     if (s) { snap = s; LS("saqr-snap", JSON.stringify(s)); }
     if (h) { hlog = h; LS("saqr-hlog", JSON.stringify(h)); }
     const when = snap && snap.exported ? new Date(snap.exported).toLocaleString("en-GB", { timeZone:"Africa/Cairo", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" }) : "—";
-    setStatus("ok", (token ? "Live" : "Read-only") + " · SAQR data from " + when + " Cairo" + (pending.length ? " · " + pending.length + " change(s) waiting for SAQR" : ""));
+    setStatus(snap ? "ok" : "warn", (!token ? "Connect sync to see your board" : !snap ? "Connected · waiting for SAQR's first export" : "Live") + " · SAQR data from " + when + " Cairo" + (pending.length ? " · " + pending.length + " change(s) waiting for SAQR" : ""));
     if (snap && snap.exported) pending = pending.filter(p => p.at > snap.exported), LS("saqr-pending", JSON.stringify(pending));
   } catch (e) {
     setStatus("warn", e && e.code === 401 ? "GitHub key rejected — reconnect in Settings" : "Offline · showing the last saved data");
@@ -257,7 +260,7 @@ async function markDone(t, b) {
   if (!token) { openSettings(); return; }
   b.disabled = true; const at = new Date().toISOString();
   try {
-    await writeFile(GH.actions, (cur) => { const a = (cur && cur.actions) || []; a.push({ id:t.id, task:t.task, status:"Done", at }); return { actions:a }; }, "SAQR app: done " + t.id);
+    await writeFile(ACTIONS.path, (cur) => { const a = (cur && cur.actions) || []; a.push({ id:t.id, task:t.task, status:"Done", at }); return { actions:a }; }, "SAQR app: done " + t.id, ACTIONS.loc);
     pending.push({ id:t.id, status:"Done", at }); LS("saqr-pending", JSON.stringify(pending));
     toast("Done. SAQR updates within the hour."); render();
   } catch (e) { b.disabled = false; toast("Couldn't save. Check your connection."); }
@@ -346,7 +349,7 @@ function openSettings() {
   const box = $("sheetIn"); box.textContent = "";
   box.append(el("div", "t", "Sync this device"));
   const ol = el("ol", "steps");
-  ["Open github.com/settings/personal-access-tokens/new (signed in).", "Name: SAQR app · Repository access: Only Hyrox-program.", "Permissions → Contents: Read and write. Generate and copy.", "Paste it below. It stays on this device only."].forEach(t => ol.append(el("li", "", t)));
+  ["Open github.com/settings/personal-access-tokens/new (signed in).", "Repository access: Only select repositories → Hyrox-program AND saqr-data.", "Permissions → Contents: Read and write. Generate and copy.", "Paste it below. It stays on this device only."].forEach(t => ol.append(el("li", "", t)));
   const link = el("a", "", "Open GitHub token page ↗"); link.href = "https://github.com/settings/personal-access-tokens/new"; link.target = "_blank";
   const inp = el("input"); inp.type = "password"; inp.placeholder = "github_pat_…"; inp.style.marginTop = "10px";
   const r = el("div", "row"); const save = el("button", "pri", "Connect"), close = el("button", "", "Close"), out = el("button", "", "Disconnect");
