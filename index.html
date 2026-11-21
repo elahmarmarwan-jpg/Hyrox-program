@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+[hidden]{display:none!important}
 /* Layout: one column training log — summary + today first, phase strip, week tabs, day cards, reference below */
 :root{
   --bg:#f4f5f7; --surface:#ffffff; --ink:#151a22; --muted:#5d6675; --line:#dfe3e9;
@@ -502,7 +503,8 @@ function persistLocal(){ try{localStorage.setItem("hyrox-state",JSON.stringify(s
 function scheduleSave(){ persistLocal(); dirty=true; if(docRef) setStatus("saving"); clearTimeout(saveTimer); saveTimer=setTimeout(flush,700); }
 function flush(){
   if(!docRef){ dirty=false; setStatus("local"); return; }
-  const body=JSON.parse(JSON.stringify(state));
+  let start=""; try{ start=localStorage.getItem("hyrox-start")||""; }catch(e){}
+  const body={app:"hyrox-18",state:JSON.parse(JSON.stringify(state)),start,updated:new Date().toISOString()};
   writing=writing.then(()=>docRef.set(body)).then(()=>{ dirty=false; setStatus("saved"); })
     .catch(e=>{ dirty=false; setStatus(e&&e.code==="quota_exceeded"?"full":"err"); });
 }
@@ -748,12 +750,43 @@ function rerender(){
 
 stats(); renderPhases(); renderBench(); setStatus("local"); route();
 
+/* ---------- Sync across devices (when opened inside Claude, signed in) ---------- */
+(async function(){
+  if(!window.claude || typeof window.claude.use!=="function") return;
+  let db=null, user=null;
+  try{ [db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")]); }catch(e){ return; }
+  if(!db||!user) return;
+  let id=null; try{ id=await user.id(); }catch(e){}
+  if(!id) return;
+  const ref=db.doc("athletes/"+id);
+  const slow=setTimeout(()=>setStatus("slow"),10000);
+  const applyRemote=(d)=>{
+    if(!d||!d.state) return false;
+    const next=norm(d.state);
+    if(JSON.stringify(next)===JSON.stringify(state) && !d.start) return true;
+    state=next; persistLocal();
+    let cur=""; try{ cur=localStorage.getItem("hyrox-start")||""; }catch(e){}
+    if(d.start && d.start!==cur){ try{ localStorage.setItem("hyrox-start",d.start); }catch(e){} location.reload(); return true; }
+    rerender(); return true;
+  };
+  try{
+    const snap=await ref.get(); clearTimeout(slow);
+    docRef=ref;
+    ["exportBtn"].forEach(i=>{ const e=document.getElementById(i); if(e) e.hidden=true; }); const il=document.querySelector('label[for="importFile"]'); if(il) il.hidden=true;
+    const d=snap.exists?snap.data():null;
+    if(d&&d.state){ applyRemote(d); setStatus("saved"); }
+    else if(hasAny()){ flush(); }
+    else setStatus("saved");
+    ref.onSnapshot((sn)=>{ if(dirty||!sn.exists) return; applyRemote(sn.data()); setStatus("saved"); },()=>{});
+  }catch(e){ clearTimeout(slow); setStatus("err"); }
+})();
+
 
 /* ---------- Start date + backup ---------- */
 (function(){
   const sd=document.getElementById("startDate");
   const d=new Date(START); sd.value=d.toISOString().slice(0,10);
-  sd.addEventListener("change",()=>{ if(!sd.value) return; try{ localStorage.setItem("hyrox-start",sd.value); }catch(e){} location.hash=""; location.reload(); });
+  sd.addEventListener("change",()=>{ if(!sd.value) return; try{ localStorage.setItem("hyrox-start",sd.value); }catch(e){} const go=()=>{ location.hash=""; location.reload(); }; if(docRef){ flush(); writing.then(go,go); } else go(); });
   document.getElementById("exportBtn").onclick=()=>{
     let start=""; try{ start=localStorage.getItem("hyrox-start")||sd.value; }catch(e){ start=sd.value; }
     const blob=new Blob([JSON.stringify({app:"hyrox-18",start,state},null,2)],{type:"application/json"});
