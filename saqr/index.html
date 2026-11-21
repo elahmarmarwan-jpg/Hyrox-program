@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SAQR</title>
+<meta name="theme-color" content="#020814">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SAQR">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--bg:#020814;--panel:#06101f;--line:rgba(61,224,255,.18);--line2:rgba(61,224,255,.32);--cyan:#3DE0FF;--blue:#3A8BFF;--amber:#FFB547;--green:#5BE3A3;--red:#FF6B6B;--ink:#E6F4FF;--mute:#8AA4BD;--mute2:#5E7891}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans Arabic",sans-serif;-webkit-tap-highlight-color:transparent}
+body{min-height:100vh;padding:calc(env(safe-area-inset-top) + 8px) 14px calc(env(safe-area-inset-bottom) + 84px);background:radial-gradient(1200px 600px at 50% -200px,rgba(58,139,255,.18),transparent 60%),var(--bg)}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.12em;text-transform:uppercase}
+header{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 14px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:34px;height:34px;filter:drop-shadow(0 0 8px rgba(61,224,255,.6))}
+.brand b{font-size:20px;letter-spacing:.42em;color:var(--cyan);font-weight:700}
+.brand span{color:var(--amber);font-size:18px;font-weight:700}
+.clock{text-align:right;font-size:11px;color:var(--mute)}
+.clock b{display:block;font-size:20px;color:var(--ink);letter-spacing:.06em}
+.status{font-size:11px;color:var(--mute);margin:-6px 2px 12px;display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--mute2)}.dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}.dot.warn{background:var(--amber)}
+h2{font-size:11px;color:var(--cyan);margin:18px 2px 8px;font-weight:600}
+.card{background:linear-gradient(180deg,rgba(10,24,44,.9),rgba(6,16,31,.9));border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.hero{border-color:var(--cyan);box-shadow:0 0 24px rgba(61,224,255,.12) inset,0 0 18px rgba(61,224,255,.08)}
+.k{font-size:10.5px;color:var(--cyan);display:flex;justify-content:space-between;gap:8px}
+.t{font-size:17px;font-weight:700;margin:4px 0 2px}
+.w{font-size:13.5px;color:#C9DCEC;white-space:pre-wrap}
+.sub{font-size:12.5px;color:var(--mute)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+button,.btn{appearance:none;border:1px solid var(--line2);background:rgba(61,224,255,.06);color:var(--ink);border-radius:10px;padding:9px 13px;font:600 13px/1 inherit;cursor:pointer}
+button.pri{background:var(--cyan);color:#00121A;border-color:var(--cyan)}
+button.ok{border-color:var(--green);color:var(--green)}
+button:disabled{opacity:.45}
+input,textarea{width:100%;background:#010812;border:1px solid var(--line2);border-radius:10px;color:var(--ink);padding:10px;font:14px inherit}
+textarea{min-height:70px;resize:vertical}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:6px;scrollbar-width:none}
+.chip{flex:none;font-size:11px;padding:7px 11px;border-radius:999px}
+.chip.on{background:var(--cyan);color:#00121A;border-color:var(--cyan)}
+.task{border-left:3px solid var(--amber)}
+.task.f-LinkedIn{border-left-color:#3A8BFF}.task.f-Instagram{border-left-color:#FF5FA2}.task.f-Athlete{border-left-color:var(--red)}.task.f-Podcast{border-left-color:#B48CFF}.task.f-Executive{border-left-color:var(--green)}
+.task.done{opacity:.5}
+.badge{font-size:10px;padding:2px 7px;border-radius:999px;border:1px solid currentColor}
+.late{color:var(--red)}.soon{color:var(--amber)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font-size:22px;color:var(--cyan)}.stat span{font-size:10px;color:var(--mute)}
+.sess{display:flex;gap:12px;align-items:flex-start}
+.sess .d{min-width:46px;text-align:center;font-size:11px;color:var(--mute)}.sess .d b{display:block;font-size:18px;color:var(--ink)}
+.sess.main .t{color:var(--amber)}.sess.rest{opacity:.55}.sess.isdone .d b{color:var(--green)}
+.tick{color:var(--green);font-weight:700}
+nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(2,8,20,.94);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 6px calc(env(safe-area-inset-bottom) + 6px);z-index:10}
+nav button{border:0;background:none;border-radius:10px;padding:8px 2px;font-size:10px;color:var(--mute);display:flex;flex-direction:column;align-items:center;gap:3px;letter-spacing:.08em}
+nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7}
+nav button.on{color:var(--cyan)}
+.sheet{position:fixed;inset:0;background:rgba(1,4,10,.75);z-index:20;display:flex;align-items:flex-end}
+.sheet .in{background:var(--panel);border:1px solid var(--line2);border-radius:18px 18px 0 0;width:100%;max-height:88vh;overflow:auto;padding:18px 16px calc(env(safe-area-inset-bottom) + 18px)}
+.empty{color:var(--mute);font-size:13px;padding:10px 2px}
+a{color:var(--cyan)}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 86px);transform:translateX(-50%);background:var(--cyan);color:#00121A;font-weight:700;font-size:13px;padding:9px 14px;border-radius:999px;z-index:30}
+.new{color:var(--green)}.me{color:var(--amber)}
+ol.steps{margin:6px 0 10px 18px;font-size:13.5px;color:#C9DCEC}
+@media(min-width:760px){body{max-width:720px;margin:0 auto}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#3DE0FF" stroke-width="2.5" opacity=".7"/><path d="M14 44 C 22 22, 40 14, 52 18 C 44 22, 40 28, 38 34 C 34 30, 26 34, 22 40 Z" fill="#3DE0FF"/><circle cx="45" cy="21" r="2.6" fill="#FFB547"/></svg>
+    <div><b>SAQR</b> <span>صقر</span></div>
+  </div>
+  <div class="clock mono">Cairo<b id="clock">--:--</b></div>
+</header>
+<div class="status"><i class="dot" id="dot"></i><span id="statusTxt">Loading…</span></div>
+
+<main id="view"></main>
+
+<nav id="nav">
+  <button data-v="today" class="on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>TODAY</button>
+  <button data-v="board"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>BOARD</button>
+  <button data-v="hyrox"><svg viewBox="0 0 24 24"><path d="M4 12h3l2-5 4 10 2-5h5"/></svg>HYROX</button>
+  <button data-v="watch"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>WATCH</button>
+  <button data-v="outputs"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/></svg>OUTPUTS</button>
+</nav>
+
+<div class="sheet" id="sheet" hidden><div class="in" id="sheetIn"></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ---------- HYROX program (same as the GitHub site) ---------- */
+const HX_KICK = ["Kick-off · Baseline test","Max","BASELINE: 15' warm-up → 1 km run time trial → 10' easy → 1,000m SkiErg → rest 5' → 1,000m Row → rest 5' → 100 wall balls (6kg) for time. Write down all four results"];
+const HX_PHASES = [{n:"Build",from:1,to:4},{n:"Strength-Endurance",from:5,to:8},{n:"Race-Specific I",from:9,to:12},{n:"Race-Specific II",from:13,to:16},{n:"Peak & Taper",from:17,to:18}];
+const _THU = (m) => ["Optional · Zone 2 / Power","Zone 2 / RPE 7","Option A: Zone 2 run " + m + "' · Option B (Power): KB swing 5×15, box jump 5×5, med-ball slam 4×10"];
+const _R = ["Rest","—","Full rest, or 30' walk + stretching"], _RF = ["Rest","—","Full rest"], _MOB = ["Optional · Zone 2 / Power","Easy","Mobility / yoga 30'"];
+const HX_WEEKS = {
+ 1:{deload:false,days:[["Strength A · Lower","RPE 8","Back squat 5×5 · Trap-bar deadlift 4×5 · Bulgarian split squat 3×8/leg · Heavy treadmill push 5×25m · Pallof press 3×10/side"],["Run · Threshold","RPE 7–8","15' warm-up → 4×1 km @ threshold, 90s jog → 10' cool-down"],["Strength B · Upper + Pull","RPE 8","Strict press 5×5 · Weighted pull-ups 4×5 · Rope/cable row 4×10 · Farmers carry 4×50m @ 2×32kg · Zone 2 25'"],["Stations","RPE 7–8","SkiErg 4×500m @ race pace, 1:1 rest · Wall balls 4×25, 60s rest · BBJ 3×20m"],_THU(45),["MAIN · HYROX","RPE 7","Compromised running: 8 × [1 km run @ RPE 7 + station at 50% race volume] in race order: Ski 500m → Treadmill push 25m → Rope pull 25m → BBJ 40m → Row 500m → Farmers 100m → Lunges 50m → 50 WB"],_R]},
+ 2:{deload:false,days:[["Strength A · Lower","RPE 8","Back squat 5×5 (+2.5kg) · Trap-bar DL 4×5 · Bulgarian split squat 3×10/leg · Treadmill push 6×25m heavy · Core"],["Run · Threshold","RPE 7–8","15' warm-up → 5×1 km @ threshold, 90s jog → 10' cool-down"],["Strength B · Upper + Pull","RPE 8","Strict press 5×5 · Weighted pull-ups 4×5 · Rope row 4×10 · Farmers 4×60m @ 2×32kg · Zone 2 30'"],["Stations","RPE 8","Treadmill push 8×12.5m heavy, 60s rest · Rope pull 8×12.5m heavy, 60s rest · BBJ 3×20m"],_THU(45),["MAIN · HYROX","RPE 7–8","8 × [1 km run @ RPE 7 + station at 60% race volume] in race order"],_R]},
+ 3:{deload:false,days:[["Strength A · Lower","RPE 8","Back squat 5×4 · Trap-bar DL 5×4 · Bulgarian split squat 3×8/leg (loaded) · Treadmill push 6×25m · Core"],["Run · Threshold","RPE 7–8","15' warm-up → 6×1 km @ threshold, 75s jog → 10' cool-down"],["Strength B · Upper + Pull","RPE 8","Strict press 5×4 · Weighted pull-ups 5×4 · Rope row 4×10 · Farmers 4×75m @ 2×32kg · Zone 2 30'"],["Stations","RPE 7–8","Row 4×500m @ race pace, 1:1 rest · Farmers carry 4×100m @ 2×24kg · Sandbag lunges 4×25m @ 20kg"],_THU(50),["MAIN · HYROX","RPE 7–8","8 × [1 km run @ RPE 7–8 + station at 70% race volume] in race order. Log each 1 km split"],_R]},
+ 4:{deload:true,days:[["Strength A · Lower","RPE 6","DELOAD: Back squat 3×5 · Trap-bar DL 2×5 · Split squat 2×8/leg · Treadmill push 3×25m · Mobility 15'"],["Run · Test","RPE 9","TEST: 15' warm-up → 1 km time trial → 15' easy. Compare to baseline"],["Strength B · Upper + Pull","RPE 6","DELOAD: Strict press 3×5 · Pull-ups 3×5 · Rope row 3×10 · Farmers 3×50m · Zone 2 20'"],["Stations · Test","Max","TEST: 1,000m SkiErg → 5' → 1,000m Row → 5' → 100 wall balls for time. Compare to baseline"],_MOB,["MAIN · HYROX","RPE 8","TEST: Half HYROX (front half): 4 × [1 km run + full station]: Ski 1,000m / Treadmill push 50m / Rope pull 50m / BBJ 80m. Log total + splits"],_RF]},
+ 5:{deload:false,days:[["Strength A · Lower","RPE 8","Front squat 4×5 · Deadlift 4×3 · Superset ×3: sandbag lunge 20kg 20m + box jump 5 · Treadmill push 6×12.5m, heavier than feels comfortable, 60s rest"],["Run · Threshold","RPE 7–8","15' warm-up → 3×2 km @ threshold, 2' jog → 10' cool-down"],["Strength B · Upper + Pull","RPE 8","Push press 4×4 · Pendlay row 4×6 · Rope pull 6×12.5m heavy · Farmers 3×100m @ 2×24kg · Zone 2 30'"],["Stations","RPE 8","4 rounds: SkiErg 500m + 500m run + 25 wall balls, steady race pace, 2' rest between rounds"],_THU(50),["MAIN · HYROX","Race pace","8 × [1 km run @ target race pace + station at 75% race volume] in race order. Keep transitions under 30s"],_R]},
+ 6:{deload:false,days:[["Strength A · Lower","RPE 8","Front squat 4×5 · Deadlift 4×3 · Superset ×4: sandbag lunge 20m + box jump 5 · Treadmill push 8×12.5m, heavier than feels comfortable"],["Run · Race pace","Race pace","15' warm-up → 8×1 km @ target race pace, 60s rest → 10' cool-down"],["Strength B · Upper + Pull","RPE 8","Push press 4×4 · Pendlay row 4×6 · Rope pull 8×12.5m · Farmers 3×100m · Zone 2 30'"],["Stations","RPE 8","4 rounds, heavy: Treadmill push 25m + 400m run + Rope pull 25m + 400m run"],_THU(50),["MAIN · HYROX","RPE 7","Engine builder: 5 km run @ RPE 6 → straight into 3 rounds: Row 500m + BBJ 20m + 30 wall balls → 2 km run"],_R]},
+ 7:{deload:false,days:[["Strength A · Lower","RPE 8–9","Front squat 3×4 · Deadlift 3×3 · Superset ×4: sandbag lunge 25m + box jump 5 · Treadmill push 8×12.5m"],["Run · Tempo","RPE 7","15' warm-up → 25' continuous tempo @ RPE 7 → 10' cool-down"],["Strength B · Upper + Pull","RPE 8","Push press 4×3 · Pendlay row 4×6 · Rope pull 8×12.5m · Farmers 2×200m @ 2×24kg · Zone 2 35'"],["Stations","RPE 8","3 rounds @ race weights: 50m sandbag lunges + 200m farmers carry + 40m BBJ + 400m run"],_THU(50),["MAIN · HYROX","Race pace","8 × [1 km run @ race pace + station at 85% race volume] in race order. Log splits"],_R]},
+ 8:{deload:true,days:[["Strength A · Lower","RPE 6","DELOAD: Front squat 3×4 · Deadlift 2×3 · Lunges 2×10/leg · Treadmill push 3×12.5m · Mobility 15'"],["Run · Easy","Zone 2","30' easy run + 6×20s strides"],["Strength B · Upper + Pull","RPE 6","DELOAD: Push press 3×4 · Row 3×8 · Pull-ups 3×6 · Farmers 2×100m · Zone 2 20'"],["Stations","RPE 6","Station tour at 60%: all 8 stations, focus on technique and breathing"],_MOB,["MAIN · HYROX","RPE 8","TEST: Half HYROX (back half) at 80% effort: 4 × [1 km run + full station]: Row 1,000m / Farmers 200m / Lunges 100m / 100 WB. Log splits"],_RF]},
+ 9:{deload:false,days:[["Strength A · Lower","RPE 8","Back squat 4×4 · RDL 3×6 · Finisher 3 rounds: treadmill push 25m heavy + 15 wall balls + 300m run"],["Run · Race pace","Race pace","15' warm-up → 8×1 km @ race pace, 60s rest → 10' cool-down"],["Strength B · Upper + Pull","RPE 8","Push press 4×4 · Weighted pull-ups 4×5 · Complex ×4: Rope pull 25m + farmers 100m @ 2×24kg · Zone 2 30'"],["Stations","Race pace","Front-half stations at race pace, 500m run between: Ski 1,000m → Treadmill push 50m → Rope pull 50m → BBJ 80m"],_THU(50),["MAIN · HYROX","Race pace","8 × [1 km @ race pace + station at 90% race volume] in race order. Transitions under 30s, log splits"],_R]},
+ 10:{deload:false,days:[["Strength A · Lower","RPE 8","Back squat 4×3 · RDL 3×6 · Finisher 4 rounds: Treadmill push 25m + 15 wall balls + 300m run"],["Run · Threshold+","RPE 8","15' warm-up → 3×2 km slightly faster than race pace, 2' jog → 10' cool-down"],["Strength B · Upper + Pull","RPE 8","Push press 4×3 · Weighted pull-ups 4×4 · Complex ×4: Rope pull 25m + farmers 100m · Zone 2 35'"],["Stations","Race pace","Back-half stations at race pace, 500m run between: Row 1,000m → Farmers 200m → Lunges 100m → 100 wall balls"],["Optional · Zone 2 / Power","Zone 2","Zone 2 run 40' + 6 strides (keep it easy before Friday)"],["MAIN · HYROX","RPE 7–8 (80%)","FULL HYROX SIMULATION @ 80% effort: 8×1 km + all 8 stations (race weights, push/pull swaps). First full run-through: learn your pacing, log every split"],_RF]},
+ 11:{deload:false,days:[["Strength A · Lower","RPE 8","Front squat 3×4 · Deadlift 3×3 · Finisher 4 rounds: sandbag lunge 25m + Treadmill push 25m + 300m run"],["Run · Race pace","Race pace","15' warm-up → 10×1 km @ race pace, 60s rest → 10' cool-down"],["Strength B · Upper + Pull","RPE 8","Bench press 4×5 · Weighted pull-ups 4×4 · Complex ×4: Rope pull 25m + farmers 100m · Zone 2 35'"],["Stations","Race pace","Weakness day: your 2 slowest stations from the Wk 10 sim, 4 rounds each at race weight, 400m run between"],_THU(50),["MAIN · HYROX","Race pace","Race-pace blocks: 4 × [2 km run @ race pace + 2 stations at full race volume], in race order, 3' between blocks"],_R]},
+ 12:{deload:true,days:[["Strength A · Lower","RPE 6","DELOAD: Back squat 3×4 · RDL 2×5 · Lunges 2×10/leg · Treadmill push 3×12.5m · Mobility 15'"],["Run · Easy","Zone 2","30' easy run + 6×20s strides"],["Strength B · Upper + Pull","RPE 6","DELOAD: Push press 3×4 · Row 3×8 · Pull-ups 3×6 · Farmers 2×100m · Zone 2 20'"],["Stations","RPE 6","Station tour at 60%: all 8 stations, technique and breathing"],_MOB,["MAIN · HYROX","RPE 6","DELOAD: 4 × [1 km run @ RPE 6 + one station at 50%], smooth technique, no racing"],_RF]},
+ 13:{deload:false,days:[["Strength A · Lower","RPE 8","Back squat 3×3 · RDL 3×6 · Finisher 3 rounds: treadmill push 25m heavy + 20 wall balls + 200m run"],["Run · Race pace","Race pace","15' warm-up → 10×1 km @ race pace, 45s rest → 10' cool-down"],["Strength B · Upper + Pull","RPE 8","Bench press 3×5 · Pull-ups 3×8 · Complex ×4: Rope pull 25m + farmers 100m · Zone 2 30'"],["Stations","Race pace","Front-half stations at race pace, 3' rest between: Ski 1,000m → Treadmill push 50m → Rope pull 50m → BBJ 80m. Note each station time"],["Optional · Zone 2 / Power","Zone 2","Zone 2 run 30' + 6 strides"],["MAIN · HYROX","Race pace","Race-pace blocks: 4 × [2 km run @ race pace + 2 stations at full race volume], in race order, 3' between blocks"],_R]},
+ 14:{deload:false,days:[["Strength A · Lower","RPE 8","Back squat 3×3 · RDL 3×6 · Finisher 3 rounds: Treadmill push 25m + 20 wall balls + 200m run"],["Run · Speed","Faster than race","15' warm-up → 6×800m faster than race pace, 90s jog → 2 km tempo → 10' cool-down"],["Strength B · Upper + Pull","RPE 8","Bench press 3×5 · Pull-ups 3×8 · Complex ×4: Rope pull 25m + farmers 100m · Zone 2 35'"],["Stations","Race pace","Back-half stations at race pace, 3' rest between: Row 1,000m → Farmers 200m → Lunges 100m → 100 wall balls"],["Optional · Zone 2 / Power","Zone 2","Zone 2 run 30' + 6 strides"],["MAIN · HYROX","RPE 8 (85%)","FULL HYROX SIMULATION @ 85% effort: 8×1 km + all 8 stations (race weights, push/pull swaps). Record every split + total"],_RF]},
+ 15:{deload:false,days:[["Strength A · Lower","RPE 8","Back squat 3×2 · RDL 2×6 · Finisher 4 rounds: Treadmill push 25m + 20 wall balls + 200m run"],["Run · Race pace","Race pace","15' warm-up → 8×1 km @ race pace, 30s rest → 10' cool-down"],["Strength B · Upper + Pull","RPE 8","Bench press 3×5 · Pull-ups 3×6 · Complex ×4: Rope pull 25m + farmers 100m · Zone 2 30'"],["Stations","Race pace","Weakness day: your 2 slowest stations from the Wk 14 sim, 4 rounds each at race weight, 400m run between"],["Optional · Zone 2 / Power","Zone 2","Zone 2 run 30' + 6 strides"],["MAIN · HYROX","Race pace","Roxzone drill: 8 × [1 km @ race pace + station at 75%]. Practise transitions under 30s, race fuelling and pacing plan"],_R]},
+ 16:{deload:false,days:[["Strength A · Lower","RPE 7","Back squat 3×3 · RDL 2×5 · Treadmill push 4×12.5m, fast and crisp, no grinding"],["Run · Race pace","Race pace","15' warm-up → 5×1 km @ race pace, 60s rest → 10' cool-down"],["Strength B · Upper + Pull","RPE 7","Bench press 3×4 · Pull-ups 3×5 · Farmers 2×100m · Zone 2 25'"],["Stations","RPE 5","Light technique: each station at 25% volume, smooth · 20' easy run"],["Optional · Zone 2 / Power","Easy","Rest, or 20' easy jog + mobility"],["MAIN · HYROX","RPE 9","TEST: FULL HYROX SIMULATION @ race effort, in race kit with race fuelling. Record total + all splits"],_RF]},
+ 17:{deload:false,days:[["Strength A · Lower","RPE 6","Recovery strength: Back squat 3×3 · RDL 2×5 · Mobility 15'"],["Run · Race pace","Race pace","15' warm-up → 5×1 km @ race pace, 60s rest → 10' cool-down"],["Strength B · Upper + Pull","RPE 7","Strict press 3×5 · Pull-ups 3×5 · Farmers 2×100m · Zone 2 25'"],["Stations","RPE 7–8","Station sharpening: each station at 50% volume, race pace, full rest between"],["Optional · Zone 2 / Power","Zone 2","Zone 2 run 30' + 6 strides"],["MAIN · HYROX","Race pace","Half sim (front half) @ race pace: 4 × [1 km + Ski 1,000m / Treadmill push 50m / Rope pull 50m / BBJ 80m]"],_RF]},
+ 18:{deload:false,days:[["Strength A · Lower","RPE 5","Light: Back squat 3×3 @ 60% · Treadmill push 3×12.5m · Mobility 15'"],["Run · Sharpen","Race pace","15' easy → 4×600m @ race pace, 2' jog → 10' easy"],["Strength B · Upper + Pull","RPE 4","Zone 2 25' + upper activation: band pull-aparts 3×15, push-ups 3×10"],["Stations","RPE 6","Openers: 4 × [500m run @ race pace + one station at 25%]"],["Rest","—","Full rest: hydrate, eat well, sleep"],["MAIN · HYROX","RPE 9–10","FINAL TEST: full HYROX simulation (or race day if your event lands here). Compare your total with Wk 16"],["Rest","—","Full rest. Block complete"]]}
+};
+
+for (let w = 1; w <= 17; w++) { const d = HX_WEEKS[w].days; const t = d[4]; d[4] = d[6]; d[6] = t; }
+const HX_URL = "https://elahmarmarwan-jpg.github.io/Hyrox-program/";
+const DAYN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+/* ---------- GitHub data ---------- */
+const GH = { owner:"elahmarmarwan-jpg", repo:"Hyrox-program", branch:"data", snap:"data/saqr.json", actions:"data/saqr-actions.json" };
+const LS = (k,v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
+let token = LS("hyrox-gh-token");
+const logPath = () => "data/" + String(LS("hyrox-gh-login") || "elahmarmarwan-jpg").toLowerCase() + ".json";
+const b64e = (t) => btoa(unescape(encodeURIComponent(t))), b64d = (t) => decodeURIComponent(escape(atob(String(t).replace(/\s/g, ""))));
+const api = (p, opt = {}) => fetch("https://api.github.com" + p, Object.assign({ cache:"no-store" }, opt, { headers: Object.assign({ Accept:"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" }, token ? { Authorization:"Bearer " + token } : {}, opt.headers || {}) }));
+const shas = {};
+async function readFile(path) {
+  if (token) {
+    const r = await api("/repos/" + GH.owner + "/" + GH.repo + "/contents/" + path + "?ref=" + GH.branch + "&t=" + Date.now());
+    if (r.status === 404) { shas[path] = null; return null; }
+    if (r.status === 401) { token = null; throw { code:401 }; }
+    if (!r.ok) throw { code:r.status };
+    const j = await r.json(); shas[path] = j.sha; return JSON.parse(b64d(j.content));
+  }
+  const r = await fetch("https://raw.githubusercontent.com/" + GH.owner + "/" + GH.repo + "/" + GH.branch + "/" + path + "?t=" + Date.now(), { cache:"no-store" });
+  if (r.status === 404) return null; if (!r.ok) throw { code:r.status }; return r.json();
+}
+async function writeFile(path, mutate, message) {
+  if (!token) throw { code:"notoken" };
+  for (let i = 0; i < 3; i++) {
+    const cur = await readFile(path);
+    const next = mutate(cur);
+    const r = await api("/repos/" + GH.owner + "/" + GH.repo + "/contents/" + path, { method:"PUT", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(Object.assign({ message, content: b64e(JSON.stringify(next, null, 1)), branch: GH.branch }, shas[path] ? { sha: shas[path] } : {})) });
+    if (r.ok) { shas[path] = (await r.json()).content.sha; return next; }
+    if (r.status === 409 || r.status === 422) continue;
+    throw { code:r.status };
+  }
+  throw { code:"conflict" };
+}
+
+/* ---------- State ---------- */
+let snap = null, hlog = null, pending = [];
+try { snap = JSON.parse(LS("saqr-snap") || "null"); hlog = JSON.parse(LS("saqr-hlog") || "null"); pending = JSON.parse(LS("saqr-pending") || "[]"); } catch (e) {}
+let view = "today", front = "All", hxWeek = null, outFilter = "All", watchTab = "hyrox";
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+function cairoToday() { return new Date().toLocaleDateString("en-CA", { timeZone:"Africa/Cairo" }); }
+function daysLeft(d) { if (!d) return null; return Math.round((Date.parse(d) - Date.parse(cairoToday())) / 86400000); }
+function fmtDate(d) { if (!d) return ""; const x = new Date(d + "T12:00:00Z"); return DAYN[x.getUTCDay()] + " " + x.getUTCDate() + " " + x.toLocaleString("en", { month:"short", timeZone:"UTC" }); }
+function toast(t) { const e = $("toast"); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => e.hidden = true, 2200); }
+function setStatus(kind, txt) { $("dot").className = "dot " + (kind === "ok" ? "on" : kind === "warn" ? "warn" : ""); $("statusTxt").textContent = txt; }
+
+/* ---------- HYROX helpers ---------- */
+function hxStart() { const s = hlog && hlog.start; return /^\d{4}-\d{2}-\d{2}$/.test(s || "") ? s : "2026-11-22"; }
+function addDays(iso, n) { return new Date(Date.parse(iso + "T00:00:00Z") + n * 86400000).toISOString().slice(0, 10); }
+function keyDate(key) { const [w, i] = key.split("-").map(Number); return w === 0 ? addDays(hxStart(), -1) : addDays(hxStart(), (w - 1) * 7 + i); }
+function sessionOn(iso) {
+  const n = Math.round((Date.parse(iso + "T00:00:00Z") - Date.parse(hxStart() + "T00:00:00Z")) / 86400000);
+  if (n === -1) return { key:"0-6", week:0, title:HX_KICK[0], effort:HX_KICK[1], workout:HX_KICK[2], date:iso };
+  if (n < 0 || n >= 126) return null;
+  const week = Math.floor(n / 7) + 1, i = n % 7, s = HX_WEEKS[week].days[i];
+  return { key: week + "-" + i, week, i, title:s[0], effort:s[1], workout:s[2], date:iso, deload:HX_WEEKS[week].deload, phase:(HX_PHASES.find(p => week >= p.from && week <= p.to) || {}).n };
+}
+function isDone(key) { const st = hlog && hlog.state; if (!st) return false; if (st.done && st.done[key]) return true; const sc = st.scores && st.scores[key]; return !!(sc && Object.values(sc).some(v => v !== "" && v != null && JSON.stringify(v) !== "{}")); }
+function scoreText(key) { const sc = hlog && hlog.state && hlog.state.scores && hlog.state.scores[key]; if (!sc) return ""; const parts = []; const walk = (o) => Object.entries(o).forEach(([k, v]) => { if (v && typeof v === "object") walk(v); else if (v !== "" && v != null) parts.push((k === "notes" ? "" : k + " ") + v); }); walk(sc); return parts.join(" · "); }
+
+/* ---------- Sync ---------- */
+async function refresh(quiet) {
+  if (!quiet) setStatus("warn", "Syncing…");
+  try {
+    const [s, h] = await Promise.all([readFile(GH.snap), readFile(logPath())]);
+    if (s) { snap = s; LS("saqr-snap", JSON.stringify(s)); }
+    if (h) { hlog = h; LS("saqr-hlog", JSON.stringify(h)); }
+    const when = snap && snap.exported ? new Date(snap.exported).toLocaleString("en-GB", { timeZone:"Africa/Cairo", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" }) : "—";
+    setStatus("ok", (token ? "Live" : "Read-only") + " · SAQR data from " + when + " Cairo" + (pending.length ? " · " + pending.length + " change(s) waiting for SAQR" : ""));
+    if (snap && snap.exported) pending = pending.filter(p => p.at > snap.exported), LS("saqr-pending", JSON.stringify(pending));
+  } catch (e) {
+    setStatus("warn", e && e.code === 401 ? "GitHub key rejected — reconnect in Settings" : "Offline · showing the last saved data");
+  }
+  render();
+}
+
+/* ---------- Views ---------- */
+function render() {
+  const v = $("view"); v.textContent = "";
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.v === view));
+  ({ today:renderToday, board:renderBoard, hyrox:renderHyrox, watch:renderWatch, outputs:renderOutputs })[view](v);
+  window.scrollTo({ top:0 });
+}
+function tasks() {
+  const list = (snap && snap.tasks || []).map(t => Object.assign({}, t));
+  pending.forEach(p => { const t = list.find(x => x.id === p.id); if (t && p.status) t.status = p.status; });
+  return list;
+}
+function sortedOpen() { return tasks().filter(t => t.status !== "Done").sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")); }
+
+function hyroxCard(s, hero) {
+  const c = el("div", "card" + (hero ? " hero" : ""));
+  const k = el("div", "k mono"); k.append(el("span", "", (hero ? "Today · " : "") + (s.week ? "Week " + s.week + (s.phase ? " · " + s.phase : "") + (s.deload ? " · Deload" : "") : "Kick-off")), el("span", isDone(s.key) ? "tick" : "", isDone(s.key) ? "✓ DONE" : s.effort));
+  c.append(k, el("div", "t", s.title), el("div", "w", s.workout));
+  const st = scoreText(s.key); if (st) c.append(el("div", "sub", "✎ " + st));
+  if (s.title !== "Rest") { const r = el("div", "row"); const b = el("button", isDone(s.key) ? "ok" : "pri", isDone(s.key) ? "Edit log" : "Log session"); b.onclick = () => openLog(s); r.append(b); c.append(r); }
+  return c;
+}
+function renderToday(v) {
+  const today = cairoToday(), h = new Date().toLocaleString("en-GB", { timeZone:"Africa/Cairo", hour:"numeric", hour12:false });
+  const greet = h < 12 ? "Good morning, boss." : h < 18 ? "Good afternoon, boss." : "Good evening, boss.";
+  v.append(el("div", "t", greet));
+  const open = sortedOpen();
+  const late = open.filter(t => t.who === "Marwan" && daysLeft(t.due) !== null && daysLeft(t.due) < 0);
+  const needs = open.filter(t => t.status === "Decision" || (t.who === "Marwan" && t.status === "In review") || (t.who === "Marwan" && daysLeft(t.due) !== null && daysLeft(t.due) <= 1));
+  const week = open.filter(t => daysLeft(t.due) !== null && daysLeft(t.due) >= 0 && daysLeft(t.due) <= 7);
+  const stats = el("div", "stats");
+  [[open.length, "open"], [week.length, "next 7 days"], [late.length, "overdue (you)"]].forEach(([n, l]) => { const s = el("div", "stat"); s.append(el("b", "", String(n)), el("span", "mono", l)); stats.append(s); });
+  v.append(stats);
+  const s = sessionOn(today);
+  v.append(el("h2", "mono", "Training"));
+  if (s) v.append(hyroxCard(s, true)); else v.append(el("div", "empty", "No HYROX session today."));
+  v.append(el("h2", "mono", "Needs you"));
+  if (!needs.length) v.append(el("div", "empty", "Nothing waiting on you. 👌")); else needs.slice(0, 6).forEach(t => v.append(taskCard(t)));
+  const sch = (snap && snap.scheduled || []).filter(p => (p.when_cairo || "") >= today).sort((a, b) => a.when_cairo.localeCompare(b.when_cairo)).slice(0, 3);
+  if (sch.length) { v.append(el("h2", "mono", "Going live on LinkedIn")); sch.forEach(p => { const c = el("div", "card"); c.append(el("div", "k mono", fmtDate(p.when_cairo.slice(0, 10)) + " · " + p.when_cairo.slice(11, 16)), el("div", "t", p.title)); v.append(c); }); }
+  const nw = ((snap && snap.watch && snap.watch.hyrox && snap.watch.hyrox.new) || []).length + ((snap && snap.watch && snap.watch.ticketsmarche && snap.watch.ticketsmarche.new) || []).length;
+  if (nw) { const c = el("div", "card hero"); c.append(el("div", "k mono", "Site watch"), el("div", "t", nw + " new race(s) / event(s)")); c.onclick = () => { view = "watch"; render(); }; v.append(c); }
+  if (!token) v.append(connectCard());
+}
+function taskCard(t) {
+  const c = el("div", "card task f-" + (t.front || "") + (t.status === "Done" ? " done" : ""));
+  const dl = daysLeft(t.due), k = el("div", "k mono");
+  const left = el("span", "", (t.front || "") + (t.due ? " · " + fmtDate(t.due) : ""));
+  const right = el("span", "badge " + (t.status !== "Done" && dl !== null && dl < 0 ? "late" : dl !== null && dl <= 1 ? "soon" : ""), t.status === "Done" ? "Done" : dl !== null && dl < 0 ? Math.abs(dl) + "d late" : t.status);
+  k.append(left, right);
+  c.append(k, el("div", "t", t.task));
+  if (t.next) c.append(el("div", "sub", (t.who ? t.who + " · " : "") + t.next));
+  if (t.status !== "Done") { const r = el("div", "row"); const b = el("button", "ok", "Mark done"); b.onclick = (e) => { e.stopPropagation(); markDone(t, b); }; r.append(b); c.append(r); }
+  return c;
+}
+async function markDone(t, b) {
+  if (!token) { openSettings(); return; }
+  b.disabled = true; const at = new Date().toISOString();
+  try {
+    await writeFile(GH.actions, (cur) => { const a = (cur && cur.actions) || []; a.push({ id:t.id, task:t.task, status:"Done", at }); return { actions:a }; }, "SAQR app: done " + t.id);
+    pending.push({ id:t.id, status:"Done", at }); LS("saqr-pending", JSON.stringify(pending));
+    toast("Done. SAQR updates within the hour."); render();
+  } catch (e) { b.disabled = false; toast("Couldn't save. Check your connection."); }
+}
+function renderBoard(v) {
+  const fronts = ["All", "Executive", "LinkedIn", "Instagram", "Athlete", "Podcast", "Done"];
+  const ch = el("div", "chips"); fronts.forEach(f => { const b = el("button", "chip mono" + (front === f ? " on" : ""), f); b.onclick = () => { front = f; render(); }; ch.append(b); }); v.append(ch);
+  let list = front === "Done" ? tasks().filter(t => t.status === "Done") : sortedOpen().filter(t => front === "All" || t.front === front);
+  if (!list.length) v.append(el("div", "empty", snap ? "Nothing here." : "Waiting for SAQR's first export…"));
+  list.forEach(t => v.append(taskCard(t)));
+}
+function renderHyrox(v) {
+  const today = cairoToday(), s = sessionOn(today);
+  if (hxWeek === null) hxWeek = s && s.week ? s.week : 1;
+  const keys = Object.keys((hlog && hlog.state && hlog.state.done) || {});
+  const top = el("div", "card hero");
+  top.append(el("div", "k mono", "HYROX · 18 weeks · final test Fri 26 Mar"), el("div", "t", (s && s.week ? "Week " + s.week + " · " + s.phase : s ? "Kick-off day" : "Program")), el("div", "sub", keys.length + " sessions logged"));
+  const a = el("a", "", "Open full program ↗"); a.href = HX_URL; a.target = "_blank"; const ar = el("div", "row"); ar.append(a); top.append(ar);
+  v.append(top);
+  const nav = el("div", "row"); const p = el("button", "", "‹"), n = el("button", "", "›"), lab = el("span", "mono", "Week " + hxWeek + (HX_WEEKS[hxWeek].deload ? " · Deload" : ""));
+  p.onclick = () => { hxWeek = Math.max(1, hxWeek - 1); render(); }; n.onclick = () => { hxWeek = Math.min(18, hxWeek + 1); render(); };
+  nav.append(p, lab, n); v.append(nav, el("div", "", ""));
+  const list = [];
+  if (hxWeek === 1) list.push(sessionOn(addDays(hxStart(), -1)));
+  for (let i = 0; i < 7; i++) list.push(sessionOn(addDays(hxStart(), (hxWeek - 1) * 7 + i)));
+  list.forEach(x => {
+    const c = el("div", "card sess" + (/^MAIN/.test(x.title) ? " main" : "") + (x.title === "Rest" ? " rest" : "") + (isDone(x.key) ? " isdone" : ""));
+    const d = el("div", "d mono"); const dt = new Date(x.date + "T12:00:00Z"); d.append(el("span", "", DAYN[dt.getUTCDay()]), el("b", "", isDone(x.key) ? "✓" : String(dt.getUTCDate())));
+    const body = el("div", ""); body.style.flex = "1";
+    body.append(el("div", "k mono", (x.date === today ? "Today · " : "") + x.effort), el("div", "t", x.title), el("div", "w", x.workout));
+    const st = scoreText(x.key); if (st) body.append(el("div", "sub", "✎ " + st));
+    c.append(d, body); if (x.title !== "Rest") c.onclick = () => openLog(x); v.append(c);
+  });
+}
+function openLog(s) {
+  const box = $("sheetIn"); box.textContent = "";
+  box.append(el("div", "k mono", fmtDate(s.date) + " · " + s.effort), el("div", "t", s.title), el("div", "w", s.workout));
+  const prev = (hlog && hlog.state && hlog.state.scores && hlog.state.scores[s.key] && hlog.state.scores[s.key].notes) || "";
+  const ta = el("textarea"); ta.placeholder = "Times, weights, swaps, how it felt…"; ta.value = prev; ta.style.marginTop = "12px";
+  box.append(ta);
+  if (!token) box.append(el("div", "sub", "Connect sync in Settings to log from the app."));
+  const r = el("div", "row"); const save = el("button", "pri", isDone(s.key) ? "Save" : "Mark done & save"), close = el("button", "", "Close");
+  save.disabled = !token;
+  save.onclick = async () => {
+    save.disabled = true;
+    try {
+      hlog = await writeFile(logPath(), (cur) => {
+        const d = cur || { app:"hyrox-18", state:{ done:{}, scores:{}, swaps:{} }, start:"" };
+        d.state = d.state || { done:{}, scores:{}, swaps:{} }; d.state.done = d.state.done || {}; d.state.scores = d.state.scores || {};
+        d.state.done[s.key] = true; d.state.scores[s.key] = Object.assign({}, d.state.scores[s.key] || {}, { notes: ta.value.trim() });
+        d.updated = new Date().toISOString(); return d;
+      }, "HYROX log (SAQR app) " + s.key);
+      LS("saqr-hlog", JSON.stringify(hlog)); $("sheet").hidden = true; toast("Logged. Laptop updates in seconds, SAQR within the hour."); render();
+    } catch (e) { save.disabled = false; toast("Couldn't save. Check your connection."); }
+  };
+  close.onclick = () => $("sheet").hidden = true;
+  r.append(save, close); box.append(r); $("sheet").hidden = false;
+}
+const ME_RX = /dubai|abu dhabi|sharjah|doha|qatar|riyadh|jeddah|saudi|bahrain|kuwait|muscat|oman|cairo|egypt/i;
+function renderWatch(v) {
+  const ch = el("div", "chips"); [["hyrox", "HYROX races"], ["ticketsmarche", "Ticketsmarche"]].forEach(([k, l]) => { const b = el("button", "chip mono" + (watchTab === k ? " on" : ""), l); b.onclick = () => { watchTab = k; render(); }; ch.append(b); }); v.append(ch);
+  const w = snap && snap.watch && snap.watch[watchTab];
+  if (!w) { v.append(el("div", "empty", "Waiting for the first scan…")); return; }
+  const fresh = new Set(w.new || []);
+  v.append(el("div", "sub", (w.items || []).length + " listed · checked daily 12:23 Cairo"));
+  let items = (w.items || []).slice();
+  items.sort((a, b) => (fresh.has(b) - fresh.has(a)) || (watchTab === "hyrox" ? ME_RX.test(b) - ME_RX.test(a) : 0));
+  items.forEach(it => { const [name, when] = String(it).split("|"); const c = el("div", "card"); const k = el("div", "k mono"); k.append(el("span", "", when || ""), el("span", fresh.has(it) ? "new" : ME_RX.test(name) && watchTab === "hyrox" ? "me" : "", fresh.has(it) ? "NEW" : ME_RX.test(name) && watchTab === "hyrox" ? "MIDDLE EAST" : "")); c.append(k, el("div", "t", name)); c.onclick = () => window.open(w.source, "_blank"); v.append(c); });
+}
+function renderOutputs(v) {
+  const outs = (snap && snap.outputs || []).slice().sort((a, b) => String(b.created).localeCompare(String(a.created)));
+  if (!outs.length) { v.append(el("div", "empty", "Waiting for SAQR's first export…")); return; }
+  outs.forEach(o => { const c = el("div", "card task f-" + (o.front || "")); c.append(el("div", "k mono", (o.front || "") + " · " + (o.kind || "") + " · " + String(o.created || "").slice(0, 10)), el("div", "t", o.title)); c.dir = "auto"; c.onclick = () => openOutput(o); v.append(c); });
+}
+function openOutput(o) {
+  const box = $("sheetIn"); box.textContent = "";
+  box.append(el("div", "k mono", (o.front || "") + " · " + (o.kind || "")), el("div", "t", o.title));
+  const body = el("div", "w", o.content || "(Full text arrives with the next SAQR export.)"); body.dir = "auto"; body.style.marginTop = "10px";
+  const r = el("div", "row"); const cp = el("button", "pri", "Copy"), close = el("button", "", "Close");
+  cp.onclick = async () => { try { await navigator.clipboard.writeText(o.content || ""); toast("Copied"); } catch (e) { toast("Copy not available"); } };
+  close.onclick = () => $("sheet").hidden = true;
+  r.append(cp, close); box.append(r, body); $("sheet").hidden = false;
+}
+function connectCard() { const c = el("div", "card"); c.append(el("div", "k mono", "Settings"), el("div", "t", "Connect sync to log & tick tasks"), el("div", "sub", "Uses the same GitHub key as your HYROX site. On a device where the HYROX site is already synced, this is automatic.")); const r = el("div", "row"); const b = el("button", "pri", "Connect"); b.onclick = openSettings; r.append(b); c.append(r); return c; }
+function openSettings() {
+  const box = $("sheetIn"); box.textContent = "";
+  box.append(el("div", "t", "Sync this device"));
+  const ol = el("ol", "steps");
+  ["Open github.com/settings/personal-access-tokens/new (signed in).", "Name: SAQR app · Repository access: Only Hyrox-program.", "Permissions → Contents: Read and write. Generate and copy.", "Paste it below. It stays on this device only."].forEach(t => ol.append(el("li", "", t)));
+  const link = el("a", "", "Open GitHub token page ↗"); link.href = "https://github.com/settings/personal-access-tokens/new"; link.target = "_blank";
+  const inp = el("input"); inp.type = "password"; inp.placeholder = "github_pat_…"; inp.style.marginTop = "10px";
+  const r = el("div", "row"); const save = el("button", "pri", "Connect"), close = el("button", "", "Close"), out = el("button", "", "Disconnect");
+  save.onclick = async () => { const t = inp.value.trim(); if (!t) return; token = t; LS("hyrox-gh-token", t); try { const u = await api("/user"); if (u.status === 401) throw 0; if (u.ok) LS("hyrox-gh-login", (await u.json()).login); $("sheet").hidden = true; toast("Connected"); refresh(); } catch (e) { token = null; LS("hyrox-gh-token", null); toast("That key didn't work"); } };
+  out.onclick = () => { token = null; LS("hyrox-gh-token", null); $("sheet").hidden = true; refresh(); };
+  close.onclick = () => $("sheet").hidden = true;
+  r.append(save, close); if (token) r.append(out);
+  box.append(ol, link, inp, r); $("sheet").hidden = false;
+}
+
+/* ---------- Boot ---------- */
+document.querySelectorAll("#nav button").forEach(b => b.onclick = () => { view = b.dataset.v; render(); });
+$("sheet").onclick = (e) => { if (e.target.id === "sheet") $("sheet").hidden = true; };
+$("statusTxt").onclick = () => openSettings();
+function tickClock() { $("clock").textContent = new Date().toLocaleTimeString("en-GB", { timeZone:"Africa/Cairo", hour:"2-digit", minute:"2-digit" }); }
+tickClock(); setInterval(tickClock, 15000);
+render(); refresh();
+setInterval(() => { if (!document.hidden) refresh(true); }, 60000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(true); });
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
