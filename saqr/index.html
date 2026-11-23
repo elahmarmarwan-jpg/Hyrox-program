@@ -45,7 +45,7 @@ textarea{min-height:70px;resize:vertical}
 .chip{flex:none;font-size:11px;padding:7px 11px;border-radius:999px}
 .chip.on{background:var(--cyan);color:#00121A;border-color:var(--cyan)}
 .task{border-left:3px solid var(--amber)}
-.task.f-LinkedIn{border-left-color:#3A8BFF}.task.f-Instagram{border-left-color:#FF5FA2}.task.f-Athlete{border-left-color:var(--red)}.task.f-Podcast{border-left-color:#B48CFF}.task.f-Executive{border-left-color:var(--green)}
+.task.f-LinkedIn{border-left-color:#3A8BFF}.task.f-Instagram{border-left-color:#3DE0FF}.task.f-TikTok{border-left-color:#FF4FA3}.task.f-Athlete{border-left-color:var(--red)}.task.f-Podcast{border-left-color:#B48CFF}.task.f-Executive{border-left-color:var(--green)}
 .task.done{opacity:.5}
 .badge{font-size:10px;padding:2px 7px;border-radius:999px;border:1px solid currentColor}
 .late{color:var(--red)}.soon{color:var(--amber)}
@@ -266,7 +266,7 @@ async function markDone(t, b) {
   } catch (e) { b.disabled = false; toast("Couldn't save. Check your connection."); }
 }
 function renderBoard(v) {
-  const fronts = ["All", "Executive", "LinkedIn", "Instagram", "Athlete", "Podcast", "Done"];
+  const fronts = ["All", "Executive", "LinkedIn", "Instagram", "TikTok", "Athlete", "Podcast", "Done"];
   const ch = el("div", "chips"); fronts.forEach(f => { const b = el("button", "chip mono" + (front === f ? " on" : ""), f); b.onclick = () => { front = f; render(); }; ch.append(b); }); v.append(ch);
   let list = front === "Done" ? tasks().filter(t => t.status === "Done") : sortedOpen().filter(t => front === "All" || t.front === front);
   if (!list.length) v.append(el("div", "empty", snap ? "Nothing here." : "Waiting for SAQR's first export…"));
