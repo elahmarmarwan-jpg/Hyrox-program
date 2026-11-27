@@ -213,7 +213,7 @@ function tasks() {
   pending.forEach(p => { const t = list.find(x => x.id === p.id); if (t && p.status) t.status = p.status; });
   return list;
 }
-function sortedOpen() { return tasks().filter(t => t.status !== "Done").sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")); }
+function sortedOpen() { return tasks().filter(t => t.status !== "Done" && t.status !== "Parked").sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")); }
 
 function hyroxCard(s, hero) {
   const c = el("div", "card" + (hero ? " hero" : ""));
@@ -228,11 +228,11 @@ function renderToday(v) {
   const greet = h < 12 ? "Good morning, boss." : h < 18 ? "Good afternoon, boss." : "Good evening, boss.";
   v.append(el("div", "t", greet));
   const open = sortedOpen();
-  const late = open.filter(t => t.who === "Marwan" && daysLeft(t.due) !== null && daysLeft(t.due) < 0);
-  const needs = open.filter(t => t.status === "Decision" || (t.who === "Marwan" && t.status === "In review") || (t.who === "Marwan" && daysLeft(t.due) !== null && daysLeft(t.due) <= 1));
+  const late = tasks().filter(t => t.status === "Parked");
+  const needs = open.filter(t => t.status === "Decision" || (t.who === "Marwan" && t.status === "In review") || (t.who === "Marwan" && daysLeft(t.due) !== null && daysLeft(t.due) >= 0 && daysLeft(t.due) <= 1));
   const week = open.filter(t => daysLeft(t.due) !== null && daysLeft(t.due) >= 0 && daysLeft(t.due) <= 7);
   const stats = el("div", "stats");
-  [[open.length, "open"], [week.length, "next 7 days"], [late.length, "overdue (you)"]].forEach(([n, l]) => { const s = el("div", "stat"); s.append(el("b", "", String(n)), el("span", "mono", l)); stats.append(s); });
+  [[open.length, "open"], [week.length, "next 7 days"], [late.length, "parked"]].forEach(([n, l]) => { const s = el("div", "stat"); s.append(el("b", "", String(n)), el("span", "mono", l)); stats.append(s); });
   v.append(stats);
   const s = sessionOn(today);
   v.append(el("h2", "mono", "Training"));
@@ -249,11 +249,11 @@ function taskCard(t) {
   const c = el("div", "card task f-" + (t.front || "") + (t.status === "Done" ? " done" : ""));
   const dl = daysLeft(t.due), k = el("div", "k mono");
   const left = el("span", "", (t.front || "") + (t.due ? " · " + fmtDate(t.due) : ""));
-  const right = el("span", "badge " + (t.status !== "Done" && dl !== null && dl < 0 ? "late" : dl !== null && dl <= 1 ? "soon" : ""), t.status === "Done" ? "Done" : dl !== null && dl < 0 ? Math.abs(dl) + "d late" : t.status);
+  const right = el("span", "badge " + (dl !== null && dl >= 0 && dl <= 1 ? "soon" : ""), t.status);
   k.append(left, right);
   c.append(k, el("div", "t", t.task));
   if (t.next) c.append(el("div", "sub", (t.who ? t.who + " · " : "") + t.next));
-  if (t.status !== "Done") { const r = el("div", "row"); const b = el("button", "ok", "Mark done"); b.onclick = (e) => { e.stopPropagation(); markDone(t, b); }; r.append(b); c.append(r); }
+  if (t.status !== "Done" && t.status !== "Parked") { const r = el("div", "row"); const b = el("button", "ok", "Mark done"); b.onclick = (e) => { e.stopPropagation(); markDone(t, b); }; r.append(b); c.append(r); }
   return c;
 }
 async function markDone(t, b) {
@@ -266,9 +266,9 @@ async function markDone(t, b) {
   } catch (e) { b.disabled = false; toast("Couldn't save. Check your connection."); }
 }
 function renderBoard(v) {
-  const fronts = ["All", "Executive", "LinkedIn", "Instagram", "TikTok", "Athlete", "Podcast", "Done"];
+  const fronts = ["All", "Executive", "LinkedIn", "TikTok", "Athlete", "Podcast", "Instagram", "Parked", "Done"];
   const ch = el("div", "chips"); fronts.forEach(f => { const b = el("button", "chip mono" + (front === f ? " on" : ""), f); b.onclick = () => { front = f; render(); }; ch.append(b); }); v.append(ch);
-  let list = front === "Done" ? tasks().filter(t => t.status === "Done") : sortedOpen().filter(t => front === "All" || t.front === front);
+  let list = (front === "Done" || front === "Parked") ? tasks().filter(t => t.status === front) : sortedOpen().filter(t => front === "All" || t.front === front);
   if (!list.length) v.append(el("div", "empty", snap ? "Nothing here." : "Waiting for SAQR's first export…"));
   list.forEach(t => v.append(taskCard(t)));
 }
