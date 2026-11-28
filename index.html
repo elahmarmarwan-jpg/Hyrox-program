@@ -205,6 +205,7 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
       <tr><th>Race station</th><th>Do this instead</th><th>How</th></tr>
       <tr><td>Sled push</td><td>Treadmill push</td><td>Use a curved, non-motorised treadmill if there is one. Otherwise a standard treadmill with the motor off, incline 3–5%, hands on the frame, short driving steps, body at 45°. Read distance off the display. If the gym won't allow it: bumper-plate push on a towel, or heavy goblet walking lunges for the same time.</td></tr>
       <tr><td>Sled pull</td><td>Rope pull</td><td>Tie a battle rope to a heavy kettlebell or stacked plates, sit back in an athletic stance and pull hand-over-hand until it reaches you; walk it out and repeat to the distance. Fallback: heavy seated cable row ×15 + 20m backwards walk.</td></tr>
+      <tr><td>Stations &amp; Friday sessions</td><td>Leg press + seated cable row</td><td>In station and simulation work, the push is heavy leg press and the pull is heavy seated cable row, about 8 reps for every 10 m (50 m = 40 reps). Load so the last reps grind. Strength days keep the treadmill push if your treadmill allows it; if not, use leg press there too.</td></tr>
       <tr><td>"Heavy"</td><td>Effort, not kilos</td><td>Heavy means slow, grinding steps you can only hold for 20–40s. Keep rest the same as written.</td></tr>
     </table></div>
     <div class="note">Before race day, try to book 2–3 sessions somewhere with real sleds at 152 kg / 103 kg, ideally for the Wk 10, 14 and 16 simulations.</div>
@@ -432,6 +433,15 @@ const WEEKS = {
   ["Rest","—","Full rest. Block complete"]]}
 };
 
+// No-sled gym: in station and main sessions, push = heavy leg press, pull = heavy seated cable row (about 0.8 reps per metre)
+(function(){
+  const reps=m=>Math.max(8,Math.round(parseFloat(m)*0.8));
+  const fix=t=>t
+    .replace(/Treadmill push (?:(\d+)×)?(\d+(?:\.\d+)?)m(,? heavy)?/gi,(_,n,m)=>`Leg press ${n?n+"×":""}${reps(m)} heavy`)
+    .replace(/Rope pull (?:(\d+)×)?(\d+(?:\.\d+)?)m(,? heavy)?/gi,(_,n,m)=>`Seated cable row ${n?n+"×":""}${reps(m)} heavy`)
+    .replace(/4 rounds, heavy: Leg press/,"4 rounds: Leg press");
+  for(let w=1;w<=18;w++) WEEKS[w].days.forEach(d=>{ if(/^(MAIN|Stations)/.test(d[0])) d[2]=fix(d[2]); });
+})();
 // Week layout: Thursday = rest before the main session, Saturday = optional 6th session (weeks 1-17; week 18 is race week)
 for(let w=1;w<=17;w++){ const d=WEEKS[w].days; const t=d[4]; d[4]=d[6]; d[6]=t; }
 const KICKOFF = ["Kick-off · Baseline test","Max","BASELINE: 15' warm-up → 1 km run time trial → 10' easy → 1,000m SkiErg → rest 5' → 1,000m Row → rest 5' → 100 wall balls (6kg) for time. Write down all four results"];
@@ -443,7 +453,7 @@ function readStart(){ try{ const v=localStorage.getItem("hyrox-start"); if(v&&/^
 const START = readStart(); // week 1, day 1
 const END = START + (18*7-1)*86400000;
 const DAY = 86400000;
-const STATIONS = ["SkiErg","Push","Pull","BBJ","Row","Farmers","Lunges","Wall balls"];
+const STATIONS = ["SkiErg","Leg press","Cable row","BBJ","Row","Farmers","Lunges","Wall balls"];
 
 function sessionsFor(w){
   if(w===0) return [{key:"0-6",w:0,date:new Date(START - DAY),dow:new Date(START - DAY).getUTCDay(),s:KICKOFF}];
